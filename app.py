@@ -7,26 +7,24 @@ def score(url, friend_count, mutuals, active):
     points = 0
     reasons = []
 
-   if "facebook.com/" not in url:
-    reasons.append("This is not a Facebook URL. Paste a profile link from facebook.com.")
-elif re.search(r'facebook\.com/profile\.php\?id=\d+', url):
-    reasons.append("Default ID link (more suspicious).")
-else:
-    points += 1
-    reasons.append("Custom username (better).")
-
+    # URL pattern
+    if "facebook.com/" not in url:
+        reasons.append("This is not a Facebook URL. Paste a profile link from facebook.com.")
+    elif re.search(r'facebook\.com/profile\.php\?id=\d+', url):
+        reasons.append("Default ID link (more suspicious).")
     else:
-        reasons.append("Not a Facebook URL.")
+        points += 1
+        reasons.append("Custom username (better).")
 
-    # Friend count
+    # Friend count (more relaxed range)
     if friend_count:
         try:
             fc = int(friend_count)
-           if 25 <= fc <= 5000:
-    points += 1
-    reasons.append("Friend count looks normal.")
-else:
-    reasons.append("Friend count looks unusual.")
+            if 25 <= fc <= 5000:
+                points += 1
+                reasons.append("Friend count looks normal.")
+            else:
+                reasons.append("Friend count looks unusual.")
         except:
             reasons.append("Friend count not a number.")
 
@@ -42,15 +40,17 @@ else:
         except:
             reasons.append("Mutuals not a number.")
 
-    # Activity
-    if active and active.lower().startswith('y'):
+    # Activity (checkbox handled as yes/no)
+    if active == 'y':
         points += 1
         reasons.append("Recently active.")
     else:
         reasons.append("Looks inactive.")
 
-   label = "Likely legit" if points >= 2 else "Unclear — use caution"
+    # Final label (2 points enough)
+    label = "Likely legit" if points >= 2 else "Unclear — use caution"
     return label, reasons
+
 
 @app.route("/", methods=["GET", "POST"])
 def home():
@@ -62,6 +62,7 @@ def home():
         label, reasons = score(url, friend_count, mutuals, active)
         return render_template("result.html", label=label, reasons=reasons)
     return render_template("home.html")
+
 
 if __name__ == "__main__":
     app.run()
