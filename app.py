@@ -47,7 +47,7 @@ else:
     else:
         reasons.append("Looks inactive.")
 
-    label = "Likely legit" if points >= 2 else "Be careful"
+   label = "Likely legit" if points >= 2 else "Unclear — use caution"
     return label, reasons
 
 @app.route("/", methods=["GET", "POST"])
