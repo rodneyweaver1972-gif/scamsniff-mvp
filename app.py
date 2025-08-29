@@ -7,12 +7,14 @@ def score(url, friend_count, mutuals, active):
     points = 0
     reasons = []
 
-    # URL pattern
-    if re.search(r'facebook\.com/profile\.php\?id=\d+', url):
-        reasons.append("Default ID link (more suspicious).")
-    elif "facebook.com/" in url:
-        points += 1
-        reasons.append("Custom username (better).")
+   if "facebook.com/" not in url:
+    reasons.append("This is not a Facebook URL. Paste a profile link from facebook.com.")
+elif re.search(r'facebook\.com/profile\.php\?id=\d+', url):
+    reasons.append("Default ID link (more suspicious).")
+else:
+    points += 1
+    reasons.append("Custom username (better).")
+
     else:
         reasons.append("Not a Facebook URL.")
 
