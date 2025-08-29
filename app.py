@@ -20,11 +20,11 @@ def score(url, friend_count, mutuals, active):
     if friend_count:
         try:
             fc = int(friend_count)
-            if 50 <= fc <= 1500:
-                points += 1
-                reasons.append("Friend count looks normal.")
-            else:
-                reasons.append("Friend count looks unusual.")
+           if 25 <= fc <= 5000:
+    points += 1
+    reasons.append("Friend count looks normal.")
+else:
+    reasons.append("Friend count looks unusual.")
         except:
             reasons.append("Friend count not a number.")
 
