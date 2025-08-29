@@ -58,7 +58,7 @@ def home():
         url = request.form.get("url", "")
         friend_count = request.form.get("friend_count")
         mutuals = request.form.get("mutuals")
-        active = 'y' if request.form.get('active') == 'y' else 'n'
+        active = request.form.get("active", "n").lower()
         label, reasons = score(url, friend_count, mutuals, active)
         return render_template("result.html", label=label, reasons=reasons)
     return render_template("home.html")
