@@ -1,0 +1,12 @@
+<!doctype html>
+<html>
+  <body>
+    <h2>Result: {{ label }}</h2>
+    <ul>
+      {% for r in reasons %}
+        <li>{{ r }}</li>
+      {% endfor %}
+    </ul>
+    <p><a href="/">Run another check</a></p>
+  </body>
+</html>
