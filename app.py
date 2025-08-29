@@ -47,7 +47,7 @@ def score(url, friend_count, mutuals, active):
     else:
         reasons.append("Looks inactive.")
 
-    label = "Likely legit" if points >= 3 else "Be careful"
+    label = "Likely legit" if points >= 2 else "Be careful"
     return label, reasons
 
 @app.route("/", methods=["GET", "POST"])
