@@ -7,7 +7,7 @@ def score(url, friend_count, mutuals, active):
     points = 0
     reasons = []
 
-    # URL pattern
+    # URL check
     if "facebook.com/" not in url:
         reasons.append("This is not a Facebook URL. Paste a profile link from facebook.com.")
     elif re.search(r'facebook\.com/profile\.php\?id=\d+', url):
@@ -16,7 +16,7 @@ def score(url, friend_count, mutuals, active):
         points += 1
         reasons.append("Custom username (better).")
 
-    # Friend count (more relaxed range)
+    # Friend count (relaxed range)
     if friend_count:
         try:
             fc = int(friend_count)
@@ -28,7 +28,7 @@ def score(url, friend_count, mutuals, active):
         except:
             reasons.append("Friend count not a number.")
 
-    # Mutuals
+    # Mutual friends
     if mutuals:
         try:
             m = int(mutuals)
@@ -40,14 +40,14 @@ def score(url, friend_count, mutuals, active):
         except:
             reasons.append("Mutuals not a number.")
 
-    # Activity (checkbox handled as yes/no)
+    # Recent activity (expects 'y' or 'n')
     if active == 'y':
         points += 1
         reasons.append("Recently active.")
     else:
         reasons.append("Looks inactive.")
 
-    # Final label (2 points enough)
+    # Final label (2 points = likely legit)
     label = "Likely legit" if points >= 2 else "Unclear — use caution"
     return label, reasons
 
@@ -58,6 +58,7 @@ def home():
         url = request.form.get("url", "")
         friend_count = request.form.get("friend_count")
         mutuals = request.form.get("mutuals")
+        # read y/n (blank counts as 'n')
         active = request.form.get("active", "n").lower()
         label, reasons = score(url, friend_count, mutuals, active)
         return render_template("result.html", label=label, reasons=reasons)
