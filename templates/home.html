@@ -2,18 +2,53 @@
 <html>
   <body>
     <h1>ScamSniff (MVP)</h1>
+
     <form method="post">
-      <label>Facebook profile URL (required):</label><br>
+      <label>Platform (required):</label><br>
+      <select name="platform" required>
+        <option value="facebook">Facebook</option>
+        <option value="instagram">Instagram</option>
+        <option value="x">X (Twitter)</option>
+        <option value="linkedin">LinkedIn</option>
+      </select>
+      <br><br>
+
+      <label>Profile URL (required):</label><br>
       <input name="url" style="width:360px" required><br><br>
 
-      <label>Friend count (helps results):</label><br>
+      <!-- Facebook helpers -->
+      <label>Friend count (Facebook — helps results):</label><br>
       <input name="friend_count" type="number"><br><br>
 
-      <label>Mutual friends (helps results):</label><br>
+      <label>Mutual friends (Facebook — helps results):</label><br>
       <input name="mutuals" type="number"><br><br>
 
+      <!-- Shared recent activity -->
       <label>Posted recently? Type y for yes, n for no (helps results):</label><br>
       <input name="active" placeholder="y or n"><br><br>
+
+      <!-- Instagram / X helpers -->
+      <label>Followers (Instagram/X — helps results):</label><br>
+      <input name="followers" type="number"><br><br>
+
+      <label>Following (Instagram/X — helps results):</label><br>
+      <input name="following" type="number"><br><br>
+
+      <label>Posts / Tweets count (Instagram/X — helps results):</label><br>
+      <input name="posts" type="number"><br><br>
+
+      <label>Account age in months (Instagram/X/LinkedIn — helps results):</label><br>
+      <input name="age_months" type="number" placeholder="e.g., 12"><br><br>
+
+      <label>Verified? Type y for yes, n for no (Instagram/X — helps results):</label><br>
+      <input name="verified" placeholder="y or n"><br><br>
+
+      <!-- LinkedIn helpers -->
+      <label>LinkedIn connections (helps results):</label><br>
+      <input name="connections" type="number"><br><br>
+
+      <label>LinkedIn has profile photo? Type y for yes, n for no (helps results):</label><br>
+      <input name="li_photo" placeholder="y or n"><br><br>
 
       <button type="submit">Check</button>
     </form>
