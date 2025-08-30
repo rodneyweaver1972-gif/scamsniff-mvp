@@ -1,56 +1,85 @@
 <!doctype html>
 <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>ScamSniff — Quick Check</title>
+    <link rel="stylesheet" href="/static/style.css">
+  </head>
   <body>
-    <h1>ScamSniff (MVP)</h1>
+    <div class="container">
+      <div class="card">
+        <h1>ScamSniff</h1>
+        <p class="subtitle">Quick checks for social profiles. The more info you add, the better the result.</p>
 
-    <form method="post">
-      <label>Platform (required):</label><br>
-      <select name="platform" required>
-        <option value="facebook">Facebook</option>
-        <option value="instagram">Instagram</option>
-        <option value="x">X (Twitter)</option>
-        <option value="linkedin">LinkedIn</option>
-      </select>
-      <br><br>
+        <form method="post">
+          <label>Platform (required):</label>
+          <select name="platform" required>
+            <option value="facebook">Facebook</option>
+            <option value="instagram">Instagram</option>
+            <option value="x">X (Twitter)</option>
+            <option value="linkedin">LinkedIn</option>
+          </select>
 
-      <label>Profile URL (required):</label><br>
-      <input name="url" style="width:360px" required><br><br>
+          <label>Profile URL (required):</label>
+          <input name="url" placeholder="https://www.facebook.com/john.smith.123" required>
 
-      <!-- Facebook helpers -->
-      <label>Friend count (Facebook — helps results):</label><br>
-      <input name="friend_count" type="number"><br><br>
+          <div class="row">
+            <div>
+              <label>Friend count (Facebook — helps results):</label>
+              <input name="friend_count" type="number" placeholder="e.g., 160">
+            </div>
+            <div>
+              <label>Mutual friends (Facebook — helps results):</label>
+              <input name="mutuals" type="number" placeholder="e.g., 4">
+            </div>
+          </div>
 
-      <label>Mutual friends (Facebook — helps results):</label><br>
-      <input name="mutuals" type="number"><br><br>
+          <label>Posted recently? Type y for yes, n for no (helps results):</label>
+          <input name="active" placeholder="y or n">
 
-      <!-- Shared recent activity -->
-      <label>Posted recently? Type y for yes, n for no (helps results):</label><br>
-      <input name="active" placeholder="y or n"><br><br>
+          <div class="row">
+            <div>
+              <label>Followers (Instagram/X — helps results):</label>
+              <input name="followers" type="number" placeholder="e.g., 320">
+            </div>
+            <div>
+              <label>Following (Instagram/X — helps results):</label>
+              <input name="following" type="number" placeholder="e.g., 250">
+            </div>
+          </div>
 
-      <!-- Instagram / X helpers -->
-      <label>Followers (Instagram/X — helps results):</label><br>
-      <input name="followers" type="number"><br><br>
+          <div class="row">
+            <div>
+              <label>Posts / Tweets count (Instagram/X — helps results):</label>
+              <input name="posts" type="number" placeholder="e.g., 75">
+            </div>
+            <div>
+              <label>Account age in months (IG/X/LinkedIn — helps results):</label>
+              <input name="age_months" type="number" placeholder="e.g., 12">
+            </div>
+          </div>
 
-      <label>Following (Instagram/X — helps results):</label><br>
-      <input name="following" type="number"><br><br>
+          <div class="row">
+            <div>
+              <label>Verified? Type y for yes, n for no (Instagram/X — helps results):</label>
+              <input name="verified" placeholder="y or n">
+            </div>
+            <div>
+              <label>LinkedIn connections (helps results):</label>
+              <input name="connections" type="number" placeholder="e.g., 240">
+            </div>
+          </div>
 
-      <label>Posts / Tweets count (Instagram/X — helps results):</label><br>
-      <input name="posts" type="number"><br><br>
+          <label>LinkedIn has profile photo? Type y for yes, n for no (helps results):</label>
+          <input name="li_photo" placeholder="y or n">
 
-      <label>Account age in months (Instagram/X/LinkedIn — helps results):</label><br>
-      <input name="age_months" type="number" placeholder="e.g., 12"><br><br>
+          <button type="submit">Run Check</button>
+          <p class="note">Advisory only. Always verify independently.</p>
+        </form>
+      </div>
 
-      <label>Verified? Type y for yes, n for no (Instagram/X — helps results):</label><br>
-      <input name="verified" placeholder="y or n"><br><br>
-
-      <!-- LinkedIn helpers -->
-      <label>LinkedIn connections (helps results):</label><br>
-      <input name="connections" type="number"><br><br>
-
-      <label>LinkedIn has profile photo? Type y for yes, n for no (helps results):</label><br>
-      <input name="li_photo" placeholder="y or n"><br><br>
-
-      <button type="submit">Check</button>
-    </form>
+      <p class="footer">© ScamSniff MVP — <a href="/">Home</a></p>
+    </div>
   </body>
 </html>
