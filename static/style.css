@@ -67,7 +67,8 @@
   border-radius: 12px;
   font-weight: 800;
   text-decoration: none;
-  transition: transform .06s ease, filter .2s ease, box-shadow .2s ease;
+ transition: transform 0.15s ease, filter .2s ease, box-shadow .2s ease;
+
 }
 .cta {
   background: linear-gradient(135deg, #34d399, #22c55e);
@@ -76,6 +77,9 @@
 .cta:hover {
   filter: brightness(1.05);
   box-shadow: 0 0 12px #fbbf24, 0 6px 18px rgba(34, 197, 94, .25);
+  transform: scale(1.03);
+}
+
 }
 
 }
