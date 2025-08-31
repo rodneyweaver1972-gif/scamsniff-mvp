@@ -93,3 +93,12 @@ body.light{
 /* Collapsible box */
 .collapsible{ display:none; }
 .collapsible.open{ display:block; }
+/* Bug report link hover effect */
+.note a {
+  color: var(--link); /* default blue */
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+.note a:hover {
+  color: #22c55e; /* green */
+  text-shadow: 0 0 6px #fbbf24; /* subtle gold glow */
+}
