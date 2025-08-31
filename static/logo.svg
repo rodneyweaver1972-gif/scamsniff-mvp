@@ -1,0 +1,11 @@
+<svg width="128" height="128" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="ScamSniff logo">
+  <!-- Shield -->
+  <path d="M16 3l8 4v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V7l8-4z"
+        stroke="#e5e7eb" stroke-width="1.6" fill="none"/>
+  <!-- Magnifying glass circle -->
+  <circle cx="16" cy="14" r="5"
+          stroke="#22c55e" stroke-width="1.8" fill="none"/>
+  <!-- Magnifying glass handle -->
+  <path d="M19.5 17.5 L23.5 21.5"
+        stroke="#22c55e" stroke-width="1.8" stroke-linecap="round"/>
+</svg>
