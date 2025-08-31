@@ -4,18 +4,25 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>ScamSniff — Quick Check</title>
+    <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/static/style.css">
   </head>
   <body>
     <div class="container">
-      <div class="toolbar">
-        <button id="themeBtn" class="toggle-btn">Toggle Light/Dark</button>
-        <button id="advBtn" class="toggle-btn">Show Advanced Fields</button>
+      <div class="header">
+        <div class="brand">
+          <img src="/static/logo.svg" alt="ScamSniff logo">
+          <span class="title">ScamSniff</span>
+        </div>
+        <div class="toolbar">
+          <button id="themeBtn" class="toggle-btn">Toggle Light/Dark</button>
+          <button id="advBtn" class="toggle-btn">Show Advanced Fields</button>
+        </div>
       </div>
 
       <div class="card">
-        <h1>ScamSniff</h1>
-        <p class="subtitle">Quick checks for social profiles. The more info you add, the better the result.</p>
+        <h1>Quick Check</h1>
+        <p class="subtitle">The more info you add, the better the result.</p>
 
         <form method="post">
           <label>Platform (required):</label>
@@ -111,7 +118,6 @@
         advanced.classList.toggle('open', advOpen);
         advBtn.textContent = advOpen ? 'Hide Advanced Fields' : 'Show Advanced Fields';
       });
-      // label correct on load
       advBtn.textContent = 'Show Advanced Fields';
     </script>
   </body>
