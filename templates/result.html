@@ -8,6 +8,10 @@
   </head>
   <body>
     <div class="container">
+      <div class="toolbar">
+        <button id="themeBtn" class="toggle-btn">Toggle Light/Dark</button>
+      </div>
+
       <div class="card">
         {% set ok = (label.startswith('Likely')) %}
         <span class="badge {{ 'ok' if ok else 'warn' }}">{{ label }}</span>
@@ -25,5 +29,17 @@
 
       <p class="footer">© ScamSniff MVP — <a href="/">Back to home</a></p>
     </div>
+
+    <script>
+      // Theme toggle (remember choice)
+      const themeBtn = document.getElementById('themeBtn');
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      if(savedTheme === 'light'){ document.body.classList.add('light'); }
+      themeBtn.addEventListener('click', () => {
+        document.body.classList.toggle('light');
+        const mode = document.body.classList.contains('light') ? 'light' : 'dark';
+        localStorage.setItem('theme', mode);
+      });
+    </script>
   </body>
 </html>
