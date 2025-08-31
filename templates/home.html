@@ -8,6 +8,11 @@
   </head>
   <body>
     <div class="container">
+      <div class="toolbar">
+        <button id="themeBtn" class="toggle-btn">Toggle Light/Dark</button>
+        <button id="advBtn" class="toggle-btn">Show Advanced Fields</button>
+      </div>
+
       <div class="card">
         <h1>ScamSniff</h1>
         <p class="subtitle">Quick checks for social profiles. The more info you add, the better the result.</p>
@@ -24,55 +29,59 @@
           <label>Profile URL (required):</label>
           <input name="url" placeholder="https://www.facebook.com/john.smith.123" required>
 
-          <div class="row">
-            <div>
-              <label>Friend count (Facebook — helps results):</label>
-              <input name="friend_count" type="number" placeholder="e.g., 160">
+          <!-- ADVANCED FIELDS WRAPPER -->
+          <div id="advanced" class="collapsible">
+            <div class="row">
+              <div>
+                <label>Friend count (Facebook — helps results):</label>
+                <input name="friend_count" type="number" placeholder="e.g., 160">
+              </div>
+              <div>
+                <label>Mutual friends (Facebook — helps results):</label>
+                <input name="mutuals" type="number" placeholder="e.g., 4">
+              </div>
             </div>
-            <div>
-              <label>Mutual friends (Facebook — helps results):</label>
-              <input name="mutuals" type="number" placeholder="e.g., 4">
+
+            <label>Posted recently? Type y for yes, n for no (helps results):</label>
+            <input name="active" placeholder="y or n">
+
+            <div class="row">
+              <div>
+                <label>Followers (Instagram/X — helps results):</label>
+                <input name="followers" type="number" placeholder="e.g., 320">
+              </div>
+              <div>
+                <label>Following (Instagram/X — helps results):</label>
+                <input name="following" type="number" placeholder="e.g., 250">
+              </div>
             </div>
+
+            <div class="row">
+              <div>
+                <label>Posts / Tweets count (Instagram/X — helps results):</label>
+                <input name="posts" type="number" placeholder="e.g., 75">
+              </div>
+              <div>
+                <label>Account age in months (IG/X/LinkedIn — helps results):</label>
+                <input name="age_months" type="number" placeholder="e.g., 12">
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label>Verified? Type y for yes, n for no (Instagram/X — helps results):</label>
+                <input name="verified" placeholder="y or n">
+              </div>
+              <div>
+                <label>LinkedIn connections (helps results):</label>
+                <input name="connections" type="number" placeholder="e.g., 240">
+              </div>
+            </div>
+
+            <label>LinkedIn has profile photo? Type y for yes, n for no (helps results):</label>
+            <input name="li_photo" placeholder="y or n">
           </div>
-
-          <label>Posted recently? Type y for yes, n for no (helps results):</label>
-          <input name="active" placeholder="y or n">
-
-          <div class="row">
-            <div>
-              <label>Followers (Instagram/X — helps results):</label>
-              <input name="followers" type="number" placeholder="e.g., 320">
-            </div>
-            <div>
-              <label>Following (Instagram/X — helps results):</label>
-              <input name="following" type="number" placeholder="e.g., 250">
-            </div>
-          </div>
-
-          <div class="row">
-            <div>
-              <label>Posts / Tweets count (Instagram/X — helps results):</label>
-              <input name="posts" type="number" placeholder="e.g., 75">
-            </div>
-            <div>
-              <label>Account age in months (IG/X/LinkedIn — helps results):</label>
-              <input name="age_months" type="number" placeholder="e.g., 12">
-            </div>
-          </div>
-
-          <div class="row">
-            <div>
-              <label>Verified? Type y for yes, n for no (Instagram/X — helps results):</label>
-              <input name="verified" placeholder="y or n">
-            </div>
-            <div>
-              <label>LinkedIn connections (helps results):</label>
-              <input name="connections" type="number" placeholder="e.g., 240">
-            </div>
-          </div>
-
-          <label>LinkedIn has profile photo? Type y for yes, n for no (helps results):</label>
-          <input name="li_photo" placeholder="y or n">
+          <!-- END ADVANCED -->
 
           <button type="submit">Run Check</button>
           <p class="note">Advisory only. Always verify independently.</p>
@@ -81,5 +90,29 @@
 
       <p class="footer">© ScamSniff MVP — <a href="/">Home</a></p>
     </div>
+
+    <script>
+      // --- Theme toggle (remember choice) ---
+      const themeBtn = document.getElementById('themeBtn');
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      if(savedTheme === 'light'){ document.body.classList.add('light'); }
+      themeBtn.addEventListener('click', () => {
+        document.body.classList.toggle('light');
+        const mode = document.body.classList.contains('light') ? 'light' : 'dark';
+        localStorage.setItem('theme', mode);
+      });
+
+      // --- Advanced fields toggle (collapsed by default) ---
+      const advBtn = document.getElementById('advBtn');
+      const advanced = document.getElementById('advanced');
+      let advOpen = false;
+      advBtn.addEventListener('click', () => {
+        advOpen = !advOpen;
+        advanced.classList.toggle('open', advOpen);
+        advBtn.textContent = advOpen ? 'Hide Advanced Fields' : 'Show Advanced Fields';
+      });
+      // label correct on load
+      advBtn.textContent = 'Show Advanced Fields';
+    </script>
   </body>
 </html>
