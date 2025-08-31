@@ -3,132 +3,93 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>ScamSniff — Quick Check</title>
+    <title>ScamSniff — Pricing</title>
     <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/static/style.css">
   </head>
   <body>
     <div class="container">
+      <!-- Header -->
       <div class="header">
         <div class="brand">
           <img src="/static/logo.svg" alt="ScamSniff logo">
           <span class="title">ScamSniff</span>
         </div>
         <div class="toolbar">
-          <button id="themeBtn" class="toggle-btn">Toggle Light/Dark</button>
-          <button id="advBtn" class="toggle-btn">Show Advanced Fields</button>
+          <a class="toggle-btn" href="/">Home</a>
+          <a class="toggle-btn" href="/pricing">Pricing</a>
         </div>
       </div>
 
-      <div class="card">
-        <h1>Quick Check</h1>
-        <p class="subtitle">The more info you add, the better the result.</p>
-
-        <form method="post">
-          <label>Platform (required):</label>
-          <select name="platform" required>
-            <option value="facebook">Facebook</option>
-            <option value="instagram">Instagram</option>
-            <option value="x">X (Twitter)</option>
-            <option value="linkedin">LinkedIn</option>
-          </select>
-
-          <label>Profile URL (required):</label>
-          <input name="url" placeholder="https://www.facebook.com/john.smith.123" required>
-
-          <!-- ADVANCED FIELDS WRAPPER -->
-          <div id="advanced" class="collapsible">
-            <div class="row">
-              <div>
-                <label>Friend count (Facebook — helps results):</label>
-                <input name="friend_count" type="number" placeholder="e.g., 160">
-              </div>
-              <div>
-                <label>Mutual friends (Facebook — helps results):</label>
-                <input name="mutuals" type="number" placeholder="e.g., 4">
-              </div>
-            </div>
-
-            <label>Posted recently? Type y for yes, n for no (helps results):</label>
-            <input name="active" placeholder="y or n">
-
-            <div class="row">
-              <div>
-                <label>Followers (Instagram/X — helps results):</label>
-                <input name="followers" type="number" placeholder="e.g., 320">
-              </div>
-              <div>
-                <label>Following (Instagram/X — helps results):</label>
-                <input name="following" type="number" placeholder="e.g., 250">
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label>Posts / Tweets count (Instagram/X — helps results):</label>
-                <input name="posts" type="number" placeholder="e.g., 75">
-              </div>
-              <div>
-                <label>Account age in months (IG/X/LinkedIn — helps results):</label>
-                <input name="age_months" type="number" placeholder="e.g., 12">
-              </div>
-            </div>
-
-            <div class="row">
-              <div>
-                <label>Verified? Type y for yes, n for no (Instagram/X — helps results):</label>
-                <input name="verified" placeholder="y or n">
-              </div>
-              <div>
-                <label>LinkedIn connections (helps results):</label>
-                <input name="connections" type="number" placeholder="e.g., 240">
-              </div>
-            </div>
-
-            <label>LinkedIn has profile photo? Type y for yes, n for no (helps results):</label>
-            <input name="li_photo" placeholder="y or n">
-          </div>
-          <!-- END ADVANCED -->
-
-          <button type="submit">Run Check</button>
-          <p class="note">Advisory only. Always verify independently.</p>
-
-          <!-- BUG REPORT LINK -->
-          <p class="note">
-            <span style="vertical-align: middle; margin-right: 4px;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#fbbf24" viewBox="0 0 16 16">
-                <path d="M4.355 1.182a.5.5 0 0 1 .637.769A6.97 6.97 0 0 0 3.06 5H2a.5.5 0 0 1 0-1h1.06c.28-.885.78-1.674 1.48-2.318a.5.5 0 0 1 .815.5zM13 5h1a.5.5 0 0 1 0 1h-1.06a6.97 6.97 0 0 0-1.932-3.049.5.5 0 1 1 .637-.769A7.97 7.97 0 0 1 13 5zM8 1a2 2 0 0 1 2 2v1H6V3a2 2 0 0 1 2-2zm4.5 6h-9a.5.5 0 0 0-.5.5v.5h10v-.5a.5.5 0 0 0-.5-.5zM3 9v1.5a5.5 5.5 0 0 0 11 0V9H3z"/>
-              </svg>
-            </span>
-            <a href="https://docs.google.com/forms/d/e/1FAIpQLSd8ibqkQ9f6epNloeu89MGwMUulefO28_XOb4vol5lkYbN-xQ/viewform?usp=header" target="_blank" rel="noopener">Report a bug</a>
-          </p>
-        </form>
+      <!-- Intro -->
+      <div class="card" style="margin-bottom:16px;">
+        <h1>Pricing & Plans</h1>
+        <p class="subtitle">Start free. Upgrade when you need more power. Cancel anytime.</p>
       </div>
 
-      <p class="footer">© ScamSniff MVP — <a href="/">Home</a></p>
+      <!-- Plans -->
+      <div class="grid3">
+        <!-- Free -->
+        <div class="plan">
+          <h2>Free</h2>
+          <p class="price">$0<span>/mo</span></p>
+          <ul class="features">
+            <li>3 checks / month</li>
+            <li>Basic heuristics</li>
+            <li>Email support</li>
+          </ul>
+          <a class="cta muted" href="/">Start Free</a>
+        </div>
+
+        <!-- Plus -->
+        <div class="plan highlight">
+          <div class="flag">Most Popular</div>
+          <h2>Plus</h2>
+          <p class="price">$7<span>/mo</span></p>
+          <ul class="features">
+            <li>100 checks / month</li>
+            <li>Advanced rules</li>
+            <li>Priority support</li>
+          </ul>
+          <!-- Replace # with Stripe Checkout link later -->
+          <a class="cta" href="#" title="Coming soon">Upgrade</a>
+        </div>
+
+        <!-- Pro -->
+        <div class="plan">
+          <h2>Pro</h2>
+          <p class="price">$15<span>/mo</span></p>
+          <ul class="features">
+            <li>500 checks / month</li>
+            <li>Batch URLs & CSV export</li>
+            <li>Early access features</li>
+          </ul>
+          <a class="cta" href="#" title="Coming soon">Upgrade</a>
+        </div>
+      </div>
+
+      <!-- Team -->
+      <div class="card" style="margin-top:16px;">
+        <h2>Team</h2>
+        <p class="subtitle">For small teams who verify at scale.</p>
+        <div class="grid2">
+          <div class="blurb">
+            <ul class="features">
+              <li>3 seats included (add more anytime)</li>
+              <li>2,000 checks / month shared pool</li>
+              <li>Shared lists & audit log</li>
+              <li>API access + Zapier</li>
+            </ul>
+          </div>
+          <div class="ctaBox">
+            <p class="price">$99<span>/mo</span></p>
+            <a class="cta" href="#" title="Coming soon">Contact Sales</a>
+            <p class="note" style="margin-top:8px;">Need more than 10k checks? Let’s chat.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="footer">© ScamSniff MVP — <a href="/">Back to home</a></p>
     </div>
-
-    <script>
-      // --- Theme toggle (remember choice) ---
-      const themeBtn = document.getElementById('themeBtn');
-      const savedTheme = localStorage.getItem('theme') || 'dark';
-      if(savedTheme === 'light'){ document.body.classList.add('light'); }
-      themeBtn.addEventListener('click', () => {
-        document.body.classList.toggle('light');
-        const mode = document.body.classList.contains('light') ? 'light' : 'dark';
-        localStorage.setItem('theme', mode);
-      });
-
-      // --- Advanced fields toggle (collapsed by default) ---
-      const advBtn = document.getElementById('advBtn');
-      const advanced = document.getElementById('advanced');
-      let advOpen = false;
-      advBtn.addEventListener('click', () => {
-        advOpen = !advOpen;
-        advanced.classList.toggle('open', advOpen);
-        advBtn.textContent = advOpen ? 'Hide Advanced Fields' : 'Show Advanced Fields';
-      });
-      advBtn.textContent = 'Show Advanced Fields';
-    </script>
   </body>
 </html>
