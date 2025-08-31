@@ -102,3 +102,56 @@ body.light{
   color: #22c55e; /* green */
   text-shadow: 0 0 6px #fbbf24; /* subtle gold glow */
 }
+/* === Pricing grid & cards === */
+.grid3{
+  display:grid; grid-template-columns: repeat(3, 1fr); gap:16px;
+}
+.grid2{
+  display:grid; grid-template-columns: 2fr 1fr; gap:16px;
+}
+@media (max-width:900px){ .grid3{ grid-template-columns: 1fr } .grid2{ grid-template-columns: 1fr } }
+
+.plan{
+  background: var(--card);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:20px;
+  position:relative;
+}
+.plan.highlight{
+  outline: 2px solid #fbbf24;
+  box-shadow: 0 0 0 4px rgba(251,191,36,.15);
+}
+.flag{
+  position:absolute; top:12px; right:12px;
+  background:#fbbf24; color:#0f172a; font-weight:800;
+  padding:4px 8px; border-radius:999px; font-size:12px;
+}
+.plan h2{ margin:0 0 6px }
+.price{ font-size:28px; font-weight:800; margin:8px 0 12px }
+.price span{ font-size:14px; color: var(--muted); font-weight:600 }
+.features{ list-style:none; padding:0; margin:0 0 14px }
+.features li{ margin:6px 0; color:#cbd5e1 }
+
+.cta, .cta.muted{
+  display:inline-block; text-align:center; width:100%;
+  padding:12px 14px; border-radius:12px; font-weight:800; text-decoration:none;
+  transition: transform .06s ease, filter .2s ease, box-shadow .2s ease;
+}
+.cta{
+  background: linear-gradient(135deg, #34d399, #22c55e);
+  color:#052e16;
+}
+.cta:hover{ filter:brightness(1.05); box-shadow:0 6px 18px rgba(34,197,94,.25) }
+.cta:active{ transform: translateY(1px) }
+
+.cta.muted{
+  background: var(--input); color: var(--text); border:1px solid var(--border);
+}
+.cta.muted:hover{ filter:brightness(1.03) }
+
+.blurb{ align-self:center }
+.ctaBox{ text-align:center }
+
+/* Small polish so header links look like buttons */
+.toolbar a.toggle-btn{ display:inline-block; text-decoration:none }
