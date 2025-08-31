@@ -231,6 +231,9 @@ def home():
         return render_template("result.html", label=label, reasons=reasons)
 
     return render_template("home.html")
+@app.route("/pricing", methods=["GET"])
+def pricing():
+    return render_template("pricing.html")
 
 if __name__ == "__main__":
     app.run()
