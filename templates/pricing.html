@@ -1,95 +1,106 @@
 <!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>ScamSniff — Pricing</title>
-    <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/static/style.css">
-  </head>
-  <body>
-    <div class="container">
-      <!-- Header -->
-      <div class="header">
-        <div class="brand">
-          <img src="/static/logo.svg" alt="ScamSniff logo">
-          <span class="title">ScamSniff</span>
-        </div>
-        <div class="toolbar">
-          <a class="toggle-btn" href="/">Home</a>
-          <a class="toggle-btn" href="/pricing">Pricing</a>
-        </div>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ScamSniff — Pricing</title>
+
+  <!-- favicon + styles (kept same paths you already use) -->
+  <link rel="icon" href="/static/logo.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/static/style.css" />
+
+  <!-- Tiny inline fallback so it still looks decent if style.css is empty -->
+  <style>
+    :root { --bg:#0f1115; --card:#171a21; --text:#e8eaed; --muted:#9aa0a6; --brand:#6aa0ff; --brand-2:#87e8a8; }
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial}
+    .wrap{max-width:1100px;margin:0 auto;padding:24px}
+    .toolbar{display:flex;align-items:center;gap:16px}
+    .toolbar img{width:28px;height:28px}
+    .title{font-weight:700}
+    .spacer{flex:1}
+    .nav a{color:var(--muted);text-decoration:none;margin-left:12px}
+    .nav a[href="/pricing"]{color:var(--text);font-weight:600}
+    .hero{margin:28px 0 12px}
+    h1{margin:0 0 6px;font-size:28px}
+    .subtitle{color:var(--muted);margin:0 0 24px}
+    .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+    .plan{background:var(--card);border-radius:14px;padding:18px;border:1px solid #232734}
+    .plan.featured{border-color:var(--brand)}
+    .plan h2{margin:0 0 4px;font-size:20px}
+    .price{font-size:28px;font-weight:700;margin:4px 0 12px}
+    .features{list-style:none;padding:0;margin:0 0 16px;color:var(--muted)}
+    .features li{margin:6px 0}
+    .btn{display:inline-block;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:600;background:#2a2f3d;color:var(--text)}
+    .btn.primary{background:var(--brand);color:#0b1020}
+    footer{margin:28px 0 8px;color:var(--muted)}
+    footer a{color:var(--muted);text-decoration:none}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <!-- Top bar -->
+    <div class="toolbar">
+      <img src="/static/logo.svg" alt="ScamSniff logo" />
+      <span class="title">ScamSniff</span>
+      <div class="spacer"></div>
+      <nav class="nav">
+        <a href="/">Home</a>
+        <a href="/pricing">Pricing</a>
+      </nav>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+      <h1>Pricing & Plans</h1>
+      <p class="subtitle">Start free. Upgrade only if you need more power.</p>
+    </section>
+
+    <!-- Plans -->
+    <section class="grid">
+      <!-- Free -->
+      <div class="plan">
+        <h2>Free</h2>
+        <div class="price">$0<span style="font-weight:400;font-size:14px;color:var(--muted)"> / mo</span></div>
+        <ul class="features">
+          <li>10 scans per day</li>
+          <li>Manual text/URL checks</li>
+          <li>Basic scam signals</li>
+          <li>Email support</li>
+        </ul>
+        <a class="btn" href="#">Start free</a>
       </div>
 
-      <!-- Intro -->
-      <div class="card" style="margin-bottom:16px;">
-        <h1>Pricing & Plans</h1>
-        <p class="subtitle">Start free. Upgrade when you need more power. Cancel anytime.</p>
-      </div>
-
-      <!-- Plans -->
-      <div class="grid3">
-        <!-- Free -->
-        <div class="plan">
-          <h2>Free</h2>
-          <p class="price">$0<span>/mo</span></p>
-          <ul class="features">
-            <li>3 checks / month</li>
-            <li>Basic heuristics</li>
-            <li>Email support</li>
-          </ul>
-          <a class="cta muted" href="/">Start Free</a>
-        </div>
-
-        <!-- Plus -->
-        <div class="plan highlight">
-          <div class="flag">Most Popular</div>
-          <h2>Plus</h2>
-          <p class="price">$7<span>/mo</span></p>
-          <ul class="features">
-            <li>100 checks / month</li>
-            <li>Advanced rules</li>
-            <li>Priority support</li>
-          </ul>
-          <!-- Replace # with Stripe Checkout link later -->
-          <a class="cta" href="#" title="Coming soon">Upgrade</a>
-        </div>
-
-        <!-- Pro -->
-        <div class="plan">
-          <h2>Pro</h2>
-          <p class="price">$15<span>/mo</span></p>
-          <ul class="features">
-            <li>500 checks / month</li>
-            <li>Batch URLs & CSV export</li>
-            <li>Early access features</li>
-          </ul>
-          <a class="cta" href="#" title="Coming soon">Upgrade</a>
-        </div>
+      <!-- Pro (featured) -->
+      <div class="plan featured">
+        <h2>Pro</h2>
+        <div class="price">$12<span style="font-weight:400;font-size:14px;color:var(--muted)"> / mo</span></div>
+        <ul class="features">
+          <li>Unlimited scans</li>
+          <li>Batch uploads (CSV)</li>
+          <li>Advanced signals + summaries</li>
+          <li>Priority support</li>
+        </ul>
+        <a class="btn primary" href="#">Go Pro</a>
       </div>
 
       <!-- Team -->
-      <div class="card" style="margin-top:16px;">
+      <div class="plan">
         <h2>Team</h2>
-        <p class="subtitle">For small teams who verify at scale.</p>
-        <div class="grid2">
-          <div class="blurb">
-            <ul class="features">
-              <li>3 seats included (add more anytime)</li>
-              <li>2,000 checks / month shared pool</li>
-              <li>Shared lists & audit log</li>
-              <li>API access + Zapier</li>
-            </ul>
-          </div>
-          <div class="ctaBox">
-            <p class="price">$99<span>/mo</span></p>
-            <a class="cta" href="#" title="Coming soon">Contact Sales</a>
-            <p class="note" style="margin-top:8px;">Need more than 10k checks? Let’s chat.</p>
-          </div>
-        </div>
+        <div class="price">$29<span style="font-weight:400;font-size:14px;color:var(--muted)"> / mo</span></div>
+        <ul class="features">
+          <li>Up to 10 users</li>
+          <li>Shared dashboards</li>
+          <li>Audit log & exports</li>
+          <li>SLA support</li>
+        </ul>
+        <a class="btn" href="#">Contact sales</a>
       </div>
+    </section>
 
-      <p class="footer">© ScamSniff MVP — <a href="/">Back to home</a></p>
-    </div>
-  </body>
+    <footer>
+      <p><a href="/">← Back to Home</a></p>
+    </footer>
+  </div>
+</body>
 </html>

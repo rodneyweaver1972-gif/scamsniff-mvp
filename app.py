@@ -237,3 +237,5 @@ def pricing():
 
 if __name__ == "__main__":
     app.run()
+# TODO: create a new route that says hello to the user
+# TODO: create a new route that says hello to the user
