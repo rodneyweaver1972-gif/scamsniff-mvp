@@ -193,3 +193,29 @@ input, select, textarea {
   display: inline-block;
   text-decoration: none;
 }
+/* --- Risk badge styles --- */
+.badge-row {
+  display:flex; gap:.75rem; align-items:center; margin:.25rem 0 1rem;
+  flex-wrap:wrap;
+}
+.risk-badge {
+  --bg:#333; --fg:#fff; --ring:transparent;
+  font-weight:600; font-size:.95rem;
+  padding:.35rem .6rem; border-radius:999px;
+  background:var(--bg); color:var(--fg);
+  box-shadow:0 0 0 3px var(--ring) inset;
+}
+.risk-low     { --bg:#0d5f3f; --ring:#0d5f3f22; }
+.risk-medium  { --bg:#8a6d00; --ring:#8a6d0022; }
+.risk-high    { --bg:#8a1220; --ring:#8a122022; }
+.risk-unclear { --bg:#3f3f46; --ring:#3f3f4622; }
+
+.score-chip {
+  background:#1f2937; color:#e5e7eb; border:1px solid #374151;
+  padding:.30rem .55rem; border-radius:.5rem; font-size:.9rem;
+}
+.original summary { cursor:pointer; user-select:none; }
+.original pre {
+  white-space:pre-wrap; background:#0b1220; border:1px solid #1f2a44;
+  color:#dbeafe; padding:.75rem; border-radius:.5rem; margin:.5rem 0 0;
+}

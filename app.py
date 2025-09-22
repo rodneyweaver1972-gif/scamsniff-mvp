@@ -1,241 +1,141 @@
-from flask import Flask, render_template, request
-import re
+from __future__ import annotations
+import os, sqlite3
+from datetime import datetime, timezone
+from typing import Dict
+from flask import Flask, render_template, request, jsonify, g, send_from_directory
 
+# ---------------- Flask setup ----------------
 app = Flask(__name__)
+app.config.update(
+    DATABASE=os.environ.get(
+        "SCAM_SNIFF_DB",
+        os.path.join(os.path.dirname(__file__), "scans.db"),
+    )
+)
 
-# --- helpers ---
-def to_int(val):
-    try:
-        return int(val) if val not in (None, "") else None
-    except:
-        return None
+# Allow browser JS to call our API
+@app.after_request
+def add_cors(resp):
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    return resp
 
-def yn(val):
-    return (val or "n").strip().lower() == "y"
+# ---------------- DB helpers ----------------
+def get_db():
+    if "db" not in g:
+        g.db = sqlite3.connect(app.config["DATABASE"])
+        g.db.row_factory = sqlite3.Row
+    return g.db
 
-# --- FACEBOOK ---
-# Friends: 50–3000 => +1
-# Mutuals: >=3 => +1
-# Active (y) => +1
-# Custom username URL => +1
-def score_facebook(url, friend_count, mutuals, active_y):
-    points, reasons = 0, []
+@app.teardown_appcontext
+def close_db(exc):
+    db = g.pop("db", None)
+    if db is not None:
+        db.close()
 
-    # URL check
-    if "facebook.com/" not in url:
-        reasons.append("This is not a Facebook URL. Paste a link from facebook.com.")
-    elif re.search(r'facebook\.com/profile\.php\?id=\d+', url):
-        reasons.append("Default ID link (a bit more suspicious).")
-    else:
-        points += 1
-        reasons.append("Custom username in URL (good sign).")
+def init_db():
+    db = get_db()
+    db.executescript("""
+    CREATE TABLE IF NOT EXISTS scans(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message    TEXT NOT NULL,
+        score      REAL NOT NULL,
+        summary    TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );
+    """)
+    db.commit()
 
-    # Friend count
-    fc = to_int(friend_count)
-    if fc is not None:
-        if 50 <= fc <= 3000:
-            points += 1
-            reasons.append("Friend count looks normal (50–3000).")
-        else:
-            reasons.append("Friend count looks unusual.")
-    else:
-        reasons.append("Friend count not provided.")
+# Ensure DB exists when the app module is imported (works for Gunicorn/Render too)
+with app.app_context():
+    init_db()
 
-    # Mutual friends
-    m = to_int(mutuals)
-    if m is not None:
-        if m >= 3:
-            points += 1
-            reasons.append("Has mutual friends (3+).")
-        else:
-            reasons.append("Few or no mutual friends.")
-    else:
-        reasons.append("Mutual friends not provided.")
+# ---------------- Simple scoring ----------------
+KEYWORDS = [
+    ("gift card", 0.6),
+    ("bitcoin", 0.5),
+    ("western union", 0.5),
+    ("zelle", 0.4),
+    ("wire transfer", 0.4),
+    ("urgent", 0.3),
+    ("verify your account", 0.5),
+    ("login now", 0.4),
+    ("ssn", 0.6),
+    ("bank details", 0.5),
+]
 
-    # Recent activity
-    if active_y:
-        points += 1
-        reasons.append("Recently active.")
-    else:
-        reasons.append("Looks inactive.")
+def analyze_logic(message: str) -> Dict:
+    text = (message or "").lower()
+    hits = []
+    total = 0.10  # baseline
+    for kw, w in KEYWORDS:
+        if kw in text:
+            hits.append({"name": f"Keyword: {kw}", "score": w})
+            total += w
+    total = min(total, 0.99)
+    label = "HIGH" if total >= 0.75 else "MEDIUM" if total >= 0.45 else "LOW"
+    return {
+        "ok": True,
+        "summary": f"Scam likelihood: {label}",
+        "score": round(total, 2),
+        "signals": hits,
+        "echo": message
+    }
 
-    label = "Likely legit" if points >= 2 else "Unclear — use caution"
-    return label, reasons
-
-# --- INSTAGRAM ---
-# Followers: >=100 => +1
-# Ratio followers/following: 0.3–3.0 => +1
-# Posts: >=5 => +1
-# Age: >=3 months => +1
-# Active (y) => +1
-# Verified (y) => +1
-def score_instagram(followers, following, posts, age_months, active_y, verified_y, url):
-    points, reasons = 0, []
-
-    # URL check (soft)
-    if "instagram.com/" not in (url or ""):
-        reasons.append("Tip: This does not look like an Instagram URL.")
-
-    # Followers
-    fol = to_int(followers)
-    if fol is not None:
-        if fol >= 100:
-            points += 1
-            reasons.append("Followers look healthy (100+).")
-        else:
-            reasons.append("Very low followers.")
-    else:
-        reasons.append("Followers not provided.")
-
-    # Following + ratio
-    wing = to_int(following)
-    if wing is not None and fol is not None and wing > 0:
-        ratio = fol / wing
-        if 0.3 <= ratio <= 3.0:
-            points += 1
-            reasons.append("Follower/following ratio looks typical (0.3–3.0).")
-        else:
-            reasons.append("Unusual follower/following ratio.")
-    else:
-        reasons.append("Following not provided or cannot compute ratio.")
-
-    # Posts
-    p = to_int(posts)
-    if p is not None:
-        if p >= 5:
-            points += 1
-            reasons.append("Has multiple posts (5+).")
-        else:
-            reasons.append("Very few or no posts.")
-    else:
-        reasons.append("Posts count not provided.")
-
-    # Account age
-    age = to_int(age_months)
-    if age is not None:
-        if age >= 3:
-            points += 1
-            reasons.append("Account has some history (3+ months).")
-        else:
-            reasons.append("Very new account.")
-    else:
-        reasons.append("Account age not provided.")
-
-    # Activity & verified
-    if active_y:
-        points += 1
-        reasons.append("Recently active.")
-    if verified_y:
-        points += 1
-        reasons.append("Verified account (helpful signal).")
-
-    label = "Likely legit" if points >= 2 else "Unclear — use caution"
-    return label, reasons
-
-# --- X (TWITTER) ---
-# Same thresholds as Instagram
-def score_x(followers, following, posts, age_months, active_y, verified_y, url):
-    if ("x.com/" not in (url or "")) and ("twitter.com/" not in (url or "")):
-        url_hint = "Tip: This does not look like an X/Twitter URL."
-    else:
-        url_hint = None
-
-    label, reasons = score_instagram(followers, following, posts, age_months, active_y, verified_y, url)
-    if url_hint:
-        reasons.insert(0, url_hint)
-    return label, reasons
-
-# --- LINKEDIN ---
-# Connections: >=50 => +1
-# Age: >=6 months => +1
-# Photo (y) => +1
-# Active (y) => +1
-def score_linkedin(connections, age_months, active_y, photo_y, url):
-    points, reasons = 0, []
-
-    # URL check (soft)
-    if "linkedin.com/" not in (url or ""):
-        reasons.append("Tip: This does not look like a LinkedIn URL.")
-
-    # Connections
-    conn = to_int(connections)
-    if conn is not None:
-        if conn >= 50:
-            points += 1
-            reasons.append("Has 50+ connections.")
-        else:
-            reasons.append("Very few connections.")
-    else:
-        reasons.append("Connections not provided.")
-
-    # Account age
-    age = to_int(age_months)
-    if age is not None:
-        if age >= 6:
-            points += 1
-            reasons.append("Account has history (6+ months).")
-        else:
-            reasons.append("Very new account.")
-    else:
-        reasons.append("Account age not provided.")
-
-    # Activity & photo
-    if active_y:
-        points += 1
-        reasons.append("Recently active.")
-    if photo_y:
-        points += 1
-        reasons.append("Has a profile photo.")
-
-    label = "Likely legit" if points >= 2 else "Unclear — use caution"
-    return label, reasons
-
-# --- web app ---
-@app.route("/", methods=["GET", "POST"])
+# ---------------- Pages ----------------
+@app.route("/")
 def home():
-    if request.method == "POST":
-        platform = (request.form.get("platform") or "facebook").lower().strip()
-        url = request.form.get("url", "")
-
-        # shared inputs
-        active_y = yn(request.form.get("active"))
-        age_months = request.form.get("age_months")
-
-        if platform == "facebook":
-            friend_count = request.form.get("friend_count")
-            mutuals = request.form.get("mutuals")
-            label, reasons = score_facebook(url, friend_count, mutuals, active_y)
-
-        elif platform == "instagram":
-            followers = request.form.get("followers")
-            following = request.form.get("following")
-            posts = request.form.get("posts")
-            verified_y = yn(request.form.get("verified"))
-            label, reasons = score_instagram(followers, following, posts, age_months, active_y, verified_y, url)
-
-        elif platform == "x":
-            followers = request.form.get("followers")
-            following = request.form.get("following")
-            posts = request.form.get("posts")
-            verified_y = yn(request.form.get("verified"))
-            label, reasons = score_x(followers, following, posts, age_months, active_y, verified_y, url)
-
-        elif platform == "linkedin":
-            connections = request.form.get("connections")
-            li_photo = yn(request.form.get("li_photo"))
-            label, reasons = score_linkedin(connections, age_months, active_y, li_photo, url)
-
-        else:
-            label, reasons = "Unclear — use caution", ["Unknown platform."]
-
-        return render_template("result.html", label=label, reasons=reasons)
-
     return render_template("home.html")
-@app.route("/pricing", methods=["GET"])
-def pricing():
-    return render_template("pricing.html")
 
+@app.route("/history")
+def history():
+    db = get_db()
+    rows = db.execute(
+        "SELECT id, message, score, summary, created_at AS created "
+        "FROM scans ORDER BY id DESC LIMIT 100"
+    ).fetchall()
+    return render_template("history.html", scans=rows)
+
+# Optional: favicon route (silences 404 in logs if you add static/favicon.ico)
+@app.route("/favicon.ico")
+def favicon():
+    static_dir = os.path.join(app.root_path, "static")
+    icon_path = os.path.join(static_dir, "favicon.ico")
+    if os.path.exists(icon_path):
+        return send_from_directory(static_dir, "favicon.ico")
+    return ("", 204)
+
+# ---------------- JSON API for the Scan box ----------------
+@app.route("/api/analyze", methods=["POST", "OPTIONS"])
+def api_analyze():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    try:
+        data = request.get_json(silent=True) or {}
+        message = (data.get("message") or "").strip()
+        if not message:
+            return jsonify({"ok": False, "error": "message is required"}), 400
+
+        out = analyze_logic(message)
+
+        # Save to DB
+        db = get_db()
+        db.execute(
+            "INSERT INTO scans (message, score, summary, created_at) VALUES (?, ?, ?, ?)",
+            (message, out["score"], out["summary"], datetime.now(timezone.utc).isoformat())
+        )
+        db.commit()
+
+        return jsonify(out), 200
+    except Exception as e:
+        app.logger.exception("api_analyze failed")
+        return jsonify({"ok": False, "error": f"Server error: {e}"}), 500
+
+# ---------------- Entrypoint (local run) ----------------
 if __name__ == "__main__":
-    app.run()
-# TODO: create a new route that says hello to the user
-# TODO: create a new route that says hello to the user
+    # Also ensure DB when running locally
+    with app.app_context():
+        init_db()
+    print("Starting ScamSniff on http://127.0.0.1:5000", flush=True)
+    app.run(host="127.0.0.1", port=5000, debug=True)
