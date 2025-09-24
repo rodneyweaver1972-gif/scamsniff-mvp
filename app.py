@@ -1,13 +1,25 @@
 from __future__ import annotations
 import os, sqlite3
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from flask import (
     Flask, request, jsonify, render_template,
     send_from_directory, redirect, url_for, g
 )
 
-# ===================== Flask setup =====================
+# ---------------- Stripe (optional; enabled via env vars) ----------------
+try:
+    import stripe  # pip install stripe
+except Exception:
+    stripe = None
+
+def _stripe_ready() -> bool:
+    return stripe is not None and bool(os.environ.get("STRIPE_SECRET_KEY"))
+
+if stripe is not None and os.environ.get("STRIPE_SECRET_KEY"):
+    stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
+
+# ---------------- Flask setup ----------------
 app = Flask(__name__)
 app.config.update(
     DATABASE=os.environ.get(
@@ -16,7 +28,7 @@ app.config.update(
     )
 )
 
-# Simple CORS so the page JS can call our API
+# CORS so browser JS can call our API
 @app.after_request
 def add_cors(resp):
     resp.headers["Access-Control-Allow-Origin"] = "*"
@@ -24,7 +36,7 @@ def add_cors(resp):
     resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     return resp
 
-# ===================== DB helpers ======================
+# ---------------- DB helpers ----------------
 def get_db():
     if "db" not in g:
         g.db = sqlite3.connect(app.config["DATABASE"])
@@ -50,11 +62,11 @@ def init_db():
     """)
     db.commit()
 
-# Ensure DB exists (works for local + Render)
+# Ensure DB exists (local + Render)
 with app.app_context():
     init_db()
 
-# ================== Scoring rules (tunable) ==============
+# ---------------- Rules-based scoring ----------------
 PHRASES = {
     "payment_methods": [
         ("gift card", 0.60), ("gift cards", 0.60),
@@ -124,9 +136,8 @@ def analyze_logic(message: str) -> Dict[str, Any]:
 
     return {"ok": True, "summary": f"Scam likelihood: {label}", "score": round(total, 2), "signals": signals, "echo": message}
 
-# =================== Pages & simple renderer ==============
+# ---------------- Pages ----------------
 def _render(name: str, **ctx: Any):
-    """Render a template if it exists; else show a friendly message."""
     try:
         return render_template(f"{name}.html", **ctx)
     except Exception:
@@ -148,12 +159,10 @@ def history():
 def pricing():
     return _render("pricing")
 
-# If someone visits /result directly, send them home
 @app.get("/result")
 def result_get():
     return redirect(url_for("home"))
 
-# Favicon (optional; prevents 404 in logs if you later add static/favicon.ico)
 @app.get("/favicon.ico")
 def favicon():
     static_dir = os.path.join(app.root_path, "static")
@@ -162,7 +171,7 @@ def favicon():
         return send_from_directory(static_dir, "favicon.ico")
     return ("", 204)
 
-# ===================== JSON API & health ==================
+# ---------------- API & health ----------------
 @app.route("/api/analyze", methods=["POST", "OPTIONS"])
 def api_analyze():
     if request.method == "OPTIONS":
@@ -191,7 +200,33 @@ def api_analyze():
 def health():
     return jsonify({"ok": True}), 200
 
-# ================== Entrypoint (local run) =================
+# ---------------- Stripe Checkout ----------------
+@app.post("/create-checkout-session")
+def create_checkout_session():
+    if not _stripe_ready():
+        return jsonify({"ok": False, "error": "Stripe not configured"}), 400
+    price_id = os.environ.get("STRIPE_PRICE_ID")
+    if not price_id:
+        return jsonify({"ok": False, "error": "Missing STRIPE_PRICE_ID"}), 400
+    try:
+        domain = request.host_url.rstrip("/")
+        session = stripe.checkout.Session.create(
+            mode="subscription",            # use "payment" for one-time
+            line_items=[{"price": price_id, "quantity": 1}],
+            success_url=f"{domain}/success",
+            cancel_url=f"{domain}/pricing?canceled=1",
+            automatic_tax={"enabled": False},
+        )
+        return jsonify({"ok": True, "url": session.url})
+    except Exception as e:
+        app.logger.exception("stripe checkout failed")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.get("/success")
+def success():
+    return _render("success")
+
+# ---------------- Entrypoint (local) ----------------
 if __name__ == "__main__":
     with app.app_context():
         init_db()
