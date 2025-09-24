@@ -1,13 +1,22 @@
-# app.py — ScamSniff MVP (drop-in)
-# Minimal Flask app with CORS, /health, and /api/analyze.
-
 from __future__ import annotations
-import os
-from flask import Flask, request, jsonify, render_template, send_from_directory
+import os, sqlite3
+from datetime import datetime, timezone
+from typing import Dict, Any, Optional
+from flask import (
+    Flask, request, jsonify, render_template,
+    send_from_directory, redirect, url_for, g
+)
 
+# ===================== Flask setup =====================
 app = Flask(__name__)
+app.config.update(
+    DATABASE=os.environ.get(
+        "SCAM_SNIFF_DB",
+        os.path.join(os.path.dirname(__file__), "scans.db"),
+    )
+)
 
-# ---------------- CORS (simple) ----------------
+# Simple CORS so the page JS can call our API
 @app.after_request
 def add_cors(resp):
     resp.headers["Access-Control-Allow-Origin"] = "*"
@@ -15,57 +24,176 @@ def add_cors(resp):
     resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     return resp
 
-# ---------------- Health check ----------------
-@app.get("/health")
-def health():
-    return {"ok": True, "service": "scamsniff-mvp"}, 200
+# ===================== DB helpers ======================
+def get_db():
+    if "db" not in g:
+        g.db = sqlite3.connect(app.config["DATABASE"])
+        g.db.row_factory = sqlite3.Row
+    return g.db
 
-# ---------------- Demo Analyze API -------------
-# Frontend should POST JSON: {"message": "..."} (also accepts "text" or "input")
-@app.post("/api/analyze")
-def api_analyze():
-    data = request.get_json(silent=True) or {}
-    message = (data.get("message") or data.get("text") or data.get("input") or "").strip()
-    if not message:
-        return jsonify({"ok": False, "error": "No message provided"}), 400
+@app.teardown_appcontext
+def close_db(exc):
+    db = g.pop("db", None)
+    if db is not None:
+        db.close()
 
-    # TODO: replace with real scoring logic
-    score = 0.42
-    summary = "Demo result only — replace with real analysis."
+def init_db():
+    db = get_db()
+    db.executescript("""
+    CREATE TABLE IF NOT EXISTS scans(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message    TEXT NOT NULL,
+        score      REAL NOT NULL,
+        summary    TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );
+    """)
+    db.commit()
 
-    return jsonify({"ok": True, "score": score, "summary": summary, "echo": message}), 200
+# Ensure DB exists (works for local + Render)
+with app.app_context():
+    init_db()
 
-# ---------------- Static helpers ---------------
-@app.get("/favicon.ico")
-def favicon():
-    # Serve favicon if present; otherwise return 204
-    static_dir = os.path.join(app.root_path, "static")
-    ico_path = os.path.join(static_dir, "favicon.ico")
-    if os.path.exists(ico_path):
-        return send_from_directory(static_dir, "favicon.ico")
-    return ("", 204)
+# ================== Scoring rules (tunable) ==============
+PHRASES = {
+    "payment_methods": [
+        ("gift card", 0.60), ("gift cards", 0.60),
+        ("bitcoin", 0.50), ("western union", 0.50), ("moneygram", 0.45),
+        ("zelle", 0.40), ("cash app", 0.40),
+        ("wire transfer", 0.40), ("prepaid card", 0.45),
+        ("google play card", 0.55), ("apple gift card", 0.55),
+    ],
+    "check_overpayment": [
+        ("cashier's check", 0.50), ("cash a check", 0.50), ("cash the check", 0.50),
+        ("overpay", 0.40), ("over payment", 0.40),
+        ("refund the extra", 0.40), ("send the rest", 0.40),
+        ("shipping agent", 0.40), ("mover will pick up", 0.40),
+        ("deposit the check", 0.40),
+    ],
+    "sob_story": [
+        ("mother is sick", 0.30), ("my mother's sick", 0.30),
+        ("family emergency", 0.30), ("stranded", 0.30),
+        ("hospital", 0.30), ("surgery", 0.30), ("dying", 0.30),
+    ],
+    "urgency": [
+        ("urgent", 0.30), ("immediately", 0.25),
+        ("right now", 0.20), ("asap", 0.20),
+    ],
+}
 
-# ---------------- Pages (optional) -------------
-# These will render templates if they exist in /templates.
-def _render_safely(name: str):
+def _score_bucket(text: str, bucket: str):
+    score = 0.0
+    hits = []
+    any_hit = False
+    for phrase, w in PHRASES[bucket]:
+        if phrase in text:
+            any_hit = True
+            hits.append({"name": f"Keyword: {phrase}", "score": w})
+            score += w
+    return score, hits, any_hit
+
+def analyze_logic(message: str) -> Dict[str, Any]:
+    text = (message or "").lower()
+
+    total = 0.10  # baseline
+    signals = []
+
+    pm_score, pm_hits, pm_any = _score_bucket(text, "payment_methods")
+    co_score, co_hits, co_any = _score_bucket(text, "check_overpayment")
+    ss_score, ss_hits, ss_any = _score_bucket(text, "sob_story")
+    ur_score, ur_hits, ur_any = _score_bucket(text, "urgency")
+
+    total += pm_score + co_score + ss_score + ur_score
+    signals.extend(pm_hits + co_hits + ss_hits + ur_hits)
+
+    # Combo bonuses (common scam patterns)
+    if pm_any and ss_any:
+        signals.append({"name": "Pattern: sob story + unusual payment method", "score": 0.25})
+        total += 0.25
+
+    if co_any and ("cash" in text or "deposit" in text or "send the rest" in text or "refund" in text):
+        signals.append({"name": "Pattern: check overpayment", "score": 0.25})
+        total += 0.25
+
+    if pm_any and ur_any and ("gift card" in text or "gift cards" in text):
+        signals.append({"name": "Pattern: urgent gift-card payment", "score": 0.20})
+        total += 0.20
+
+    total = max(0.0, min(total, 0.99))
+    label = "HIGH" if total >= 0.75 else "MEDIUM" if total >= 0.45 else "LOW"
+
+    return {"ok": True, "summary": f"Scam likelihood: {label}", "score": round(total, 2), "signals": signals, "echo": message}
+
+# =================== Pages & simple renderer ==============
+def _render(name: str, **ctx: Any):
+    """Render a template if it exists; else show a friendly message."""
     try:
-        return render_template(f"{name}.html")
+        return render_template(f"{name}.html", **ctx)
     except Exception:
         return f"{name.title()} page (template not found). API is at /api/analyze", 200
 
 @app.get("/")
 def home():
-    return _render_safely("home")
+    return _render("home")
 
 @app.get("/history")
 def history():
-    return _render_safely("history")
+    db = get_db()
+    rows = db.execute(
+        "SELECT id, message, score, summary, created_at FROM scans ORDER BY id DESC LIMIT 100"
+    ).fetchall()
+    return _render("history", scans=rows)
 
 @app.get("/pricing")
 def pricing():
-    return _render_safely("pricing")
+    return _render("pricing")
 
-# ---------------- Local dev entrypoint ---------
+# If someone visits /result directly, send them home
+@app.get("/result")
+def result_get():
+    return redirect(url_for("home"))
+
+# Favicon (optional; prevents 404 in logs if you later add static/favicon.ico)
+@app.get("/favicon.ico")
+def favicon():
+    static_dir = os.path.join(app.root_path, "static")
+    icon = os.path.join(static_dir, "favicon.ico")
+    if os.path.exists(icon):
+        return send_from_directory(static_dir, "favicon.ico")
+    return ("", 204)
+
+# ===================== JSON API & health ==================
+@app.route("/api/analyze", methods=["POST", "OPTIONS"])
+def api_analyze():
+    if request.method == "OPTIONS":
+        return ("", 204)
+    try:
+        data = request.get_json(silent=True) or {}
+        message = (data.get("message") or "").strip()
+        if not message:
+            return jsonify({"ok": False, "error": "message is required"}), 400
+
+        out = analyze_logic(message)
+
+        db = get_db()
+        db.execute(
+            "INSERT INTO scans (message, score, summary, created_at) VALUES (?, ?, ?, ?)",
+            (message, out["score"], out["summary"], datetime.now(timezone.utc).isoformat())
+        )
+        db.commit()
+
+        return jsonify(out), 200
+    except Exception as e:
+        app.logger.exception("api_analyze failed")
+        return jsonify({"ok": False, "error": f"Server error: {e}"}), 500
+
+@app.get("/health")
+def health():
+    return jsonify({"ok": True}), 200
+
+# ================== Entrypoint (local run) =================
 if __name__ == "__main__":
-    # Local run. On Render, use: gunicorn -w 2 -k gthread -b 0.0.0.0:$PORT app:app
+    with app.app_context():
+        init_db()
+    print("Starting ScamSniff on http://127.0.0.1:5000", flush=True)
     app.run(host="127.0.0.1", port=5000, debug=True)
