@@ -1,81 +1,137 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="utf-8">
-  <title>ScamSniff — Home</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <title>ScamSniff – Check a message</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin:0; padding:24px; }
-    .nav { max-width:760px; margin:0 auto 16px; display:flex; gap:12px; }
-    .nav a { color:#0366d6; text-decoration:none; }
-    .card { max-width:760px; margin:0 auto; border:1px solid #eee; border-radius:16px; padding:20px; }
-    textarea, input, button { font-size:16px; }
-    textarea { width:100%; min-height:140px; padding:12px; border-radius:12px; border:1px solid #ccc; }
-    .btn { padding:10px 16px; border-radius:12px; background:#111; color:#fff; border:0; }
-    pre { background:#f7f7f7; padding:12px; border-radius:12px; white-space:pre-wrap; }
+    :root { --bg:#0b1220; --card:#121a2b; --muted:#9aa6b2; --text:#e6edf3; }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text)}
+    .wrap{max-width:900px; margin:40px auto; padding:0 16px}
+    header{display:flex; align-items:center; gap:12px; margin-bottom:16px}
+    header h1{font-size:24px; margin:0}
+    nav a{color:#9ecbff; text-decoration:none; margin-right:16px}
+    .card{background:var(--card); border:1px solid #1f2a44; border-radius:14px; padding:16px}
+    textarea{width:100%; min-height:140px; padding:12px; border-radius:10px; border:1px solid #243253; background:#0f182a; color:#e6edf3; font-size:15px}
+    button{padding:10px 16px; border-radius:10px; border:0; cursor:pointer; font-weight:600}
+    .primary{background:#2563eb; color:#fff}
+    .row{display:flex; gap:16px; flex-wrap:wrap}
+    .half{flex:1 1 420px}
+    .muted{color:var(--muted); font-size:13px}
+    .result{white-space:pre-wrap; background:#0f182a; border:1px solid #243253; border-radius:10px; padding:12px; min-height:100px}
+    .badge{display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700}
+    .low{background:#11371e; color:#86efac}
+    .med{background:#3a2f00; color:#fde68a}
+    .high{background:#3b0d0d; color:#fecaca}
+    table{width:100%; border-collapse:collapse; font-size:14px}
+    th,td{border-bottom:1px solid #243253; padding:8px 6px; text-align:left}
+    th{color:#9aa6b2; font-weight:600}
   </style>
 </head>
 <body>
-  <div class="nav">
-    <a href="/">Home</a>
-    <a href="/history">History</a>
-    <a href="/pricing">Pricing</a>
-  </div>
+  <div class="wrap">
+    <header>
+      <h1>🛡️ ScamSniff</h1>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/history">History</a>
+        <a href="/pricing">Pricing</a>
+      </nav>
+    </header>
 
-  <div class="card">
-    <h1 style="margin-top:0">Scan something</h1>
-    <p>Paste a message, ad, or listing text. Click Analyze.</p>
-
-    <form id="scanForm">
-      <textarea id="message" name="message" placeholder="Example: 'Please pay me with a gift card...'"></textarea>
-      <div style="margin-top:12px; display:flex; gap:10px; align-items:center;">
-        <button class="btn" type="submit" id="scanBtn">Analyze</button>
-        <span id="status" style="color:#666;"></span>
+    <div class="row">
+      <div class="half">
+        <div class="card">
+          <h2>Analyze a message</h2>
+          <p class="muted">Paste text from an email, marketplace chat, or SMS.</p>
+          <textarea id="msg" placeholder="Paste message here..."></textarea>
+          <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
+            <button id="analyze" class="primary">Analyze</button>
+            <span id="status" class="muted"></span>
+          </div>
+        </div>
       </div>
-    </form>
 
-    <div id="err" style="display:none;margin-top:12px;padding:10px;border-radius:12px;background:#fee;color:#900;"></div>
-    <pre id="out" style="display:none;margin-top:12px;"></pre>
+      <div class="half">
+        <div class="card">
+          <h2>Result</h2>
+          <div id="badgeWrap"></div>
+          <div id="signalsWrap" style="margin-top:8px;"></div>
+          <div id="json" class="result" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <p class="muted" style="margin-top:14px">Tip: we never store personal details—only the message text and score for improving rules.</p>
   </div>
 
   <script>
-    const form = document.getElementById('scanForm');
-    const messageEl = document.getElementById('message');
-    const statusEl  = document.getElementById('status');
-    const errEl     = document.getElementById('err');
-    const outEl     = document.getElementById('out');
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      errEl.style.display = 'none';
-      outEl.style.display = 'none';
-      statusEl.textContent = 'Analyzing...';
-
-      const message = (messageEl.value || '').trim();
-      if (!message) {
-        statusEl.textContent = '';
-        errEl.textContent = 'Please type something first.';
-        errEl.style.display = 'block';
-        return;
+    // IMPORTANT: same-origin path works locally and on Render (no localhost!)
+    async function callAnalyze(message){
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+      if(!res.ok){
+        const txt = await res.text().catch(()=> '');
+        throw new Error(`Request failed (${res.status}): ${txt || 'no body'}`);
       }
+      return res.json();
+    }
 
-      try {
-        const res = await fetch('/api/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message })
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || data.ok === false) {
-          throw new Error(data.error || 'Request failed');
-        }
-        outEl.textContent = JSON.stringify(data, null, 2);
-        outEl.style.display = 'block';
-        statusEl.textContent = 'Done';
-      } catch (err) {
-        statusEl.textContent = '';
-        errEl.textContent = err.message || 'Something went wrong.';
-        errEl.style.display = 'block';
+    function badge(level){
+      const span = document.createElement('span');
+      span.className = 'badge ' + (level==='HIGH'?'high':level==='MEDIUM'?'med':'low');
+      span.textContent = `Risk: ${level}`;
+      return span;
+    }
+
+    function signalsTable(signals){
+      if(!signals || !signals.length) return '';
+      let rows = signals
+        .map(s => `<tr><td>${s.name}</td><td>${(s.score*100).toFixed(0)}%</td></tr>`)
+        .join('');
+      return `
+        <table>
+          <thead><tr><th>Signal</th><th>Weight</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    const btn = document.getElementById('analyze');
+    const msg = document.getElementById('msg');
+    const status = document.getElementById('status');
+    const jsonOut = document.getElementById('json');
+    const badgeWrap = document.getElementById('badgeWrap');
+    const signalsWrap = document.getElementById('signalsWrap');
+
+    btn.addEventListener('click', async () => {
+      const text = (msg.value || '').trim();
+      if(!text){ msg.focus(); return; }
+      btn.disabled = true;
+      status.textContent = 'Analyzing...';
+      badgeWrap.innerHTML = '';
+      signalsWrap.innerHTML = '';
+      jsonOut.textContent = '';
+
+      try{
+        const data = await callAnalyze(text);
+        // Pretty JSON (debug)
+        jsonOut.textContent = JSON.stringify(data, null, 2);
+
+        // Badge + signals table
+        const level = (data.summary || '').toUpperCase().includes('HIGH') ? 'HIGH'
+                    : (data.summary || '').toUpperCase().includes('MEDIUM') ? 'MEDIUM'
+                    : 'LOW';
+        badgeWrap.appendChild(badge(level));
+        signalsWrap.innerHTML = signalsTable(data.signals || []);
+        status.textContent = 'Done.';
+      }catch(e){
+        status.textContent = e.message || 'Error';
+      }finally{
+        btn.disabled = false;
       }
     });
   </script>
