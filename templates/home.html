@@ -2,138 +2,225 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>ScamSniff – Check a message</title>
+  <title>ScamSniff — Check a message</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root { --bg:#0b1220; --card:#121a2b; --muted:#9aa6b2; --text:#e6edf3; }
-    *{box-sizing:border-box}
-    body{margin:0; font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text)}
-    .wrap{max-width:900px; margin:40px auto; padding:0 16px}
-    header{display:flex; align-items:center; gap:12px; margin-bottom:16px}
-    header h1{font-size:24px; margin:0}
-    nav a{color:#9ecbff; text-decoration:none; margin-right:16px}
-    .card{background:var(--card); border:1px solid #1f2a44; border-radius:14px; padding:16px}
-    textarea{width:100%; min-height:140px; padding:12px; border-radius:10px; border:1px solid #243253; background:#0f182a; color:#e6edf3; font-size:15px}
-    button{padding:10px 16px; border-radius:10px; border:0; cursor:pointer; font-weight:600}
-    .primary{background:#2563eb; color:#fff}
-    .row{display:flex; gap:16px; flex-wrap:wrap}
-    .half{flex:1 1 420px}
-    .muted{color:var(--muted); font-size:13px}
-    .result{white-space:pre-wrap; background:#0f182a; border:1px solid #243253; border-radius:10px; padding:12px; min-height:100px}
-    .badge{display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700}
-    .low{background:#11371e; color:#86efac}
-    .med{background:#3a2f00; color:#fde68a}
-    .high{background:#3b0d0d; color:#fecaca}
-    table{width:100%; border-collapse:collapse; font-size:14px}
-    th,td{border-bottom:1px solid #243253; padding:8px 6px; text-align:left}
-    th{color:#9aa6b2; font-weight:600}
+    /* Keep styling inline so this file works even if /static/style.css changes */
+    :root { --bg:#0f122a; --card:#1b120e; --muted:#9aa6b2; --text:#e6edf3; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:system-ui, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text) }
+    .wrap { max-width:900px; margin:40px auto; padding:0 16px; }
+    header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+    header h1 { font-size:24px; margin:0; }
+    nav a { color:#9ec8ff; text-decoration:none; margin-right:16px; }
+    .card { background:var(--card); border:1px solid #1f2a44; border-radius:14px; padding:16px; }
+    textarea { width:100%; min-height:120px; padding:12px; border:1px solid #243253; border-radius:12px; background:#0f182a; color:#e6edf3; font-size:15px; }
+    input[type="url"] { width:100%; padding:10px; border:1px solid #ddd; border-radius:12px; background:#0f182a; color:#e6edf3; }
+    button { padding:10px 16px; border-radius:12px; border:0; cursor:pointer; font-weight:600; }
+    .primary { background:#2563eb; color:#fff; }
+    .muted { color:var(--muted); font-size:13px; }
+    .row { display:flex; gap:16px; flex-wrap:wrap; }
+    .half { flex:1 1 420px; }
+    pre { white-space:pre-wrap; background:#0f182a; border:1px solid #243253; border-radius:10px; padding:12px; }
+    .badge { display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700; }
+    .low { background:#1f7a1f; color:#e0ffe0; }
+    .med { background:#ad7a1a; color:#ffe6c7; }
+    .high { background:#7a1f1f; color:#ffe0e0; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    td, th { border-top:1px solid #26324e; padding:8px; text-align:left; vertical-align:top; }
+    .err { display:none; margin-top:12px; padding:10px; border-radius:12px; background:#3b0b0b; color:#ffcdcd; }
+    .ok { display:none; margin-top:12px; padding:10px; border-radius:12px; background:#0b3b1b; color:#d6ffea; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>🛡️ ScamSniff</h1>
-      <nav>
+      <img src="/static/logo.svg" alt="logo" width="28" height="28" />
+      <h1>ScamSniff</h1>
+      <nav style="margin-left:auto">
         <a href="/">Home</a>
         <a href="/history">History</a>
         <a href="/pricing">Pricing</a>
       </nav>
     </header>
 
-    <div class="row">
-      <div class="half">
-        <div class="card">
-          <h2>Analyze a message</h2>
-          <p class="muted">Paste text from an email, marketplace chat, or SMS.</p>
-          <textarea id="msg" placeholder="Paste message here..."></textarea>
-          <div style="margin-top:10px; display:flex; gap:10px; align-items:center;">
-            <button id="analyze" class="primary">Analyze</button>
-            <span id="status" class="muted"></span>
+    <!-- Scan a message (existing feature) -->
+    <div class="card" style="margin-bottom:16px">
+      <h2 style="margin:0 0 10px 0;">Scan a message or listing</h2>
+      <p class="muted" style="margin:6px 0 12px 0;">Paste a text, ad, or listing. We’ll score it and show why.</p>
+      <div class="row">
+        <div class="half">
+          <textarea id="msg" placeholder="Paste message here…"></textarea>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button id="scanBtn" class="primary">Scan</button>
+            <button id="clearBtn">Clear</button>
           </div>
+          <div id="scanErr" class="err"></div>
         </div>
-      </div>
-
-      <div class="half">
-        <div class="card">
-          <h2>Result</h2>
-          <div id="badgeWrap"></div>
-          <div id="signalsWrap" style="margin-top:8px;"></div>
-          <div id="json" class="result" style="margin-top:8px;"></div>
+        <div class="half">
+          <div id="scoreWrap" style="display:none;margin-bottom:8px;">
+            <span class="muted">Score:</span>
+            <span id="badge" class="badge">—</span>
+          </div>
+          <pre id="summary" style="display:none;"></pre>
+          <table id="signalsTable" style="display:none;margin-top:8px;">
+            <thead><tr><th style="width:72px;">Type</th><th>Detail</th></tr></thead>
+            <tbody id="signalsBody"></tbody>
+          </table>
         </div>
       </div>
     </div>
 
-    <p class="muted" style="margin-top:14px">Tip: we never store personal details—only the message text and score for improving rules.</p>
+    <!-- Profile Check (new feature) -->
+    <div class="card" style="margin-bottom:16px">
+      <h2 style="margin:0 0 10px 0;">Profile Check</h2>
+      <p class="muted" style="margin:6px 0 12px 0;">Paste a Facebook, X/Twitter, LinkedIn, Instagram, or TikTok profile URL.</p>
+      <input id="profUrl" type="url" placeholder="https://facebook.com/username" />
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button id="profBtn" class="primary">Check profile</button>
+      </div>
+      <div id="profErr" class="err"></div>
+      <pre id="profOut" style="display:none;margin-top:8px;"></pre>
+    </div>
+
+    <!-- Upgrade (Stripe Checkout) -->
+    <div class="card">
+      <h2 style="margin:0 0 10px 0;">Upgrade</h2>
+      <p class="muted" style="margin:6px 0 12px 0;">Unlock higher limits and pro features.</p>
+      <button id="upgradeBtn" class="primary">Upgrade</button>
+      <div id="upgradeOK" class="ok">Redirecting to checkout…</div>
+      <div id="upgradeErr" class="err"></div>
+    </div>
   </div>
 
   <script>
-    // IMPORTANT: same-origin path works locally and on Render (no localhost!)
-    async function callAnalyze(message){
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
-      });
-      if(!res.ok){
-        const txt = await res.text().catch(()=> '');
-        throw new Error(`Request failed (${res.status}): ${txt || 'no body'}`);
-      }
-      return res.json();
+    // ---------- helpers ----------
+    function badgeFor(score){
+      if (score == null) return {text:'—', cls:''};
+      if (score >= 0.66) return {text:'HIGH', cls:'badge high'};
+      if (score >= 0.33) return {text:'MED', cls:'badge med'};
+      return {text:'LOW', cls:'badge low'};
+    }
+    function row(type, detail){
+      const tr = document.createElement('tr');
+      const td1 = document.createElement('td'); td1.textContent = type;
+      const td2 = document.createElement('td'); td2.textContent = detail;
+      tr.appendChild(td1); tr.appendChild(td2);
+      return tr;
     }
 
-    function badge(level){
-      const span = document.createElement('span');
-      span.className = 'badge ' + (level==='HIGH'?'high':level==='MEDIUM'?'med':'low');
-      span.textContent = `Risk: ${level}`;
-      return span;
-    }
-
-    function signalsTable(signals){
-      if(!signals || !signals.length) return '';
-      let rows = signals
-        .map(s => `<tr><td>${s.name}</td><td>${(s.score*100).toFixed(0)}%</td></tr>`)
-        .join('');
-      return `
-        <table>
-          <thead><tr><th>Signal</th><th>Weight</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>`;
-    }
-
-    const btn = document.getElementById('analyze');
+    // ---------- Scan a message ----------
+    const scanBtn = document.getElementById('scanBtn');
+    const clearBtn = document.getElementById('clearBtn');
     const msg = document.getElementById('msg');
-    const status = document.getElementById('status');
-    const jsonOut = document.getElementById('json');
-    const badgeWrap = document.getElementById('badgeWrap');
-    const signalsWrap = document.getElementById('signalsWrap');
+    const scanErr = document.getElementById('scanErr');
+    const summary = document.getElementById('summary');
+    const signalsTable = document.getElementById('signalsTable');
+    const signalsBody = document.getElementById('signalsBody');
+    const scoreWrap = document.getElementById('scoreWrap');
+    const badgeEl = document.getElementById('badge');
 
-    btn.addEventListener('click', async () => {
-      const text = (msg.value || '').trim();
-      if(!text){ msg.focus(); return; }
-      btn.disabled = true;
-      status.textContent = 'Analyzing...';
-      badgeWrap.innerHTML = '';
-      signalsWrap.innerHTML = '';
-      jsonOut.textContent = '';
+    if (scanBtn){
+      scanBtn.addEventListener('click', async () => {
+        scanErr.style.display = 'none';
+        summary.style.display = 'none';
+        signalsTable.style.display = 'none';
+        scoreWrap.style.display = 'none';
+        signalsBody.innerHTML = '';
+        try{
+          const text = (msg.value||'').trim();
+          if (!text) throw new Error('Please paste a message first.');
+          const res = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ text })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Scan failed.');
+          // Expecting: {score:0..1, summary:"", signals:[{type,detail}, ...]}
+          const b = badgeFor(data.score);
+          badgeEl.className = b.cls;
+          badgeEl.textContent = b.text;
+          scoreWrap.style.display = 'block';
 
-      try{
-        const data = await callAnalyze(text);
-        // Pretty JSON (debug)
-        jsonOut.textContent = JSON.stringify(data, null, 2);
+          summary.textContent = data.summary || 'No summary';
+          summary.style.display = 'block';
 
-        // Badge + signals table
-        const level = (data.summary || '').toUpperCase().includes('HIGH') ? 'HIGH'
-                    : (data.summary || '').toUpperCase().includes('MEDIUM') ? 'MEDIUM'
-                    : 'LOW';
-        badgeWrap.appendChild(badge(level));
-        signalsWrap.innerHTML = signalsTable(data.signals || []);
-        status.textContent = 'Done.';
-      }catch(e){
-        status.textContent = e.message || 'Error';
-      }finally{
-        btn.disabled = false;
-      }
-    });
+          (data.signals||[]).forEach(s => {
+            signalsBody.appendChild(row(s.type || 'signal', s.detail || String(s)));
+          });
+          if ((data.signals||[]).length) signalsTable.style.display = 'table';
+        }catch(e){
+          scanErr.textContent = e.message || 'Something went wrong.';
+          scanErr.style.display = 'block';
+        }
+      });
+    }
+    if (clearBtn){
+      clearBtn.addEventListener('click', () => {
+        msg.value = '';
+        scanErr.style.display = 'none';
+        summary.style.display = 'none';
+        signalsTable.style.display = 'none';
+        scoreWrap.style.display = 'none';
+        signalsBody.innerHTML = '';
+      });
+    }
+
+    // ---------- Profile Check ----------
+    (function(){
+      const btn = document.getElementById('profBtn');
+      const urlIn = document.getElementById('profUrl');
+      const err = document.getElementById('profErr');
+      const out = document.getElementById('profOut');
+      if (!btn) return;
+      btn.addEventListener('click', async () => {
+        err.style.display = 'none';
+        out.style.display = 'none';
+        try{
+          const url = (urlIn.value||'').trim();
+          if (!url) throw new Error('Please paste a profile URL.');
+          const res = await fetch('/api/social_check', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ url })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Could not check profile.');
+          out.textContent = [
+            `Summary: ${data.summary}`,
+            `Signals:`,
+            ...(data.signals||[]).map(s => ` - ${s}`)
+          ].join('\n');
+          out.style.display = 'block';
+        }catch(e){
+          err.textContent = e.message || 'Something went wrong.';
+          err.style.display = 'block';
+        }
+      });
+    })();
+
+    // ---------- Stripe Upgrade ----------
+    (function(){
+      const btn = document.getElementById('upgradeBtn');
+      const ok = document.getElementById('upgradeOK');
+      const err = document.getElementById('upgradeErr');
+      if (!btn) return;
+      btn.addEventListener('click', async () => {
+        ok.style.display = 'none';
+        err.style.display = 'none';
+        try{
+          const res = await fetch('/create-checkout-session', { method:'POST' });
+          const data = await res.json();
+          if (!res.ok || !data.url) throw new Error(data.error || 'Could not start checkout.');
+          ok.style.display = 'block';
+          window.location = data.url;
+        }catch(e){
+          err.textContent = e.message || 'Something went wrong.';
+          err.style.display = 'block';
+        }
+      });
+    })();
   </script>
 </body>
 </html>
