@@ -1,5 +1,5 @@
 from __future__ import annotations
-import os, sqlite3
+import os, sqlite3, re
 from datetime import datetime, timezone
 from typing import Dict, Any
 from flask import (
@@ -178,12 +178,14 @@ def api_analyze():
         return ("", 204)
     try:
         data = request.get_json(silent=True) or {}
-        message = (data.get("message") or "").strip()
+        # ✅ Accept both "message" and "text"
+        message = (data.get("message") or data.get("text") or "").strip()
         if not message:
             return jsonify({"ok": False, "error": "message is required"}), 400
 
         out = analyze_logic(message)
 
+        # Save to history
         db = get_db()
         db.execute(
             "INSERT INTO scans (message, score, summary, created_at) VALUES (?, ?, ?, ?)",
@@ -225,8 +227,8 @@ def create_checkout_session():
 @app.get("/success")
 def success():
     return _render("success")
+
 # ---------- Social Profile Check (heuristics) ----------
-import re
 import httpx
 from bs4 import BeautifulSoup
 
