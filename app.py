@@ -225,6 +225,108 @@ def create_checkout_session():
 @app.get("/success")
 def success():
     return _render("success")
+# ---------- Social Profile Check (heuristics) ----------
+import re
+import httpx
+from bs4 import BeautifulSoup
+
+PLATFORMS = {
+    "facebook": re.compile(r"^https?://(www\.)?facebook\.com/[^/?#]+", re.I),
+    "x": re.compile(r"^https?://(www\.)?(x\.com|twitter\.com)/[^/?#]+", re.I),
+    "linkedin": re.compile(r"^https?://(www\.)?linkedin\.com/(in|company)/[^/?#]+", re.I),
+    "instagram": re.compile(r"^https?://(www\.)?instagram\.com/[^/?#]+", re.I),
+    "tiktok": re.compile(r"^https?://(www\.)?tiktok\.com/@[^/?#]+", re.I),
+}
+
+def _detect_platform(url: str):
+    for name, pat in PLATFORMS.items():
+        if pat.search(url.strip()):
+            return name
+    return None
+
+def _fetch(url: str):
+    headers = {"User-Agent": "Mozilla/5.0 (ScamSniff Profile Check)"}
+    with httpx.Client(headers=headers, follow_redirects=True, timeout=6.0) as c:
+        try:
+            head = c.head(url)
+        except Exception:
+            head = None
+        try:
+            get = c.get(url)
+        except Exception:
+            get = None
+    return head, get
+
+NEG_STRINGS = [
+    "page isn't available", "page not found", "doesn't exist", "not found",
+    "this account doesn’t exist", "this account doesn't exist", "suspended",
+    "removed", "deactivated", "blocked", "you must log in", "sign in to continue"
+]
+
+def _analyze_html(html: str):
+    sigs = []
+    soup = BeautifulSoup(html or "", "html.parser")
+    if not soup.find("meta", property="og:title"):
+        sigs.append("Missing og:title")
+    if not soup.find("meta", property="og:description"):
+        sigs.append("Missing og:description")
+    meta_text = " ".join([
+        soup.title.string if soup.title and soup.title.string else "",
+        *[m.get("content", "") for m in soup.find_all("meta")]
+    ]).lower()
+    for bad in NEG_STRINGS:
+        if bad in meta_text:
+            sigs.append(f'Page indicates: "{bad}"')
+    if len(html or "") < 2000:
+        sigs.append("Very small page response (login wall or error)")
+    return sigs
+
+def _score(sigs, platform_detected, status_code):
+    score = 0.5
+    if not platform_detected:
+        score += 0.25
+    if status_code and status_code >= 400:
+        score += 0.3
+    for s in sigs:
+        if s.startswith("Missing og:"):
+            score += 0.05
+        if s.startswith("Page indicates:"):
+            score += 0.25
+        if "Very small page" in s:
+            score += 0.1
+    return max(0.0, min(1.0, score))
+
+@app.route("/api/social_check", methods=["POST"])
+def social_check():
+    data = request.get_json(silent=True) or {}
+    url = (data.get("url") or "").strip()
+    if not url:
+        return jsonify({"error": "Missing 'url'"}), 400
+
+    platform = _detect_platform(url)
+    head, get = _fetch(url)
+    status = get.status_code if get is not None else None
+    html = get.text if get is not None else ""
+
+    sigs = []
+    if head is not None and head.status_code in (301, 302) and "login" in (head.headers.get("location", "").lower()):
+        sigs.append("Redirected to login (profile may be private)")
+    if html:
+        sigs.extend(_analyze_html(html))
+    else:
+        sigs.append("No HTML fetched (network error or blocked)")
+
+    score = round(_score(sigs, platform, status), 2)
+    summary = f"Platform: {platform or 'unknown'}; HTTP: {status or 'n/a'}; Signals: {len(sigs)}; Risk: {score}"
+
+    return jsonify({
+        "score": score,
+        "summary": summary,
+        "platform": platform,
+        "status": status,
+        "signals": sigs[:20],
+    })
+# ---------- /Social Profile Check ----------
 
 # ---------------- Entrypoint (local) ----------------
 if __name__ == "__main__":
