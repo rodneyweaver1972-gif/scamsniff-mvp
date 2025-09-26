@@ -1,162 +1,122 @@
-from __future__ import annotations
-import os, sqlite3, re
-from datetime import datetime, timezone
-from typing import Dict, List
-from flask import Flask, render_template, request, jsonify, g, send_from_directory, redirect, url_for
+# app.py — FULL FILE (env var + fallback to your Stripe TEST link)
 
-# =============== Flask + DB setup =================
-app = Flask(__name__)
-app.config.update(
-    DATABASE=os.environ.get("SCAM_SNIFF_DB", os.path.join(os.path.dirname(__file__), "scans.db")),
-)
+import os, re, sqlite3
+from datetime import datetime
+from flask import Flask, render_template, request, jsonify, g
 
-def get_db() -> sqlite3.Connection:
+# ---------- App setup ----------
+app = Flask(__name__, template_folder="templates", static_folder="static")
+
+# SQLite DB (instance/scans.db by default)
+DB_PATH = os.getenv("SCAM_SNIFF_DB", os.path.join("instance", "scans.db"))
+os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+
+# ---------- DB helpers ----------
+def get_db():
     if "db" not in g:
-        g.db = sqlite3.connect(app.config["DATABASE"])
+        g.db = sqlite3.connect(DB_PATH)
         g.db.row_factory = sqlite3.Row
     return g.db
 
 @app.teardown_appcontext
-def close_db(_exc):
+def close_db(exc):
     db = g.pop("db", None)
     if db is not None:
         db.close()
 
-def init_db() -> None:
+def init_db():
     db = get_db()
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS scans (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            message TEXT NOT NULL,
-            score REAL NOT NULL,
-            summary TEXT NOT NULL,
-            created_at TEXT NOT NULL
-        )
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          text TEXT NOT NULL,
+          score REAL NOT NULL,
+          reasons TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        );
         """
     )
     db.commit()
 
-# =============== Simple scoring logic ===============
-KEYWORDS = {
-    "bitcoin": 0.5,
-    "gift card": 0.7,
-    "gift cards": 0.7,
-    "cash app": 0.4,
-    "wire": 0.4,
-    "zelle": 0.4,
-    "check": 0.3,
-    "urgent": 0.25,
-    "code": 0.25,
+# ---------- Scoring ----------
+PATTERNS = {
+    "gift cards / codes": r"\bgift\s*card|\bsteam\s*card|\bitunes|\bgoogle\s*play\s*card|\bscratch\s*off",
+    "crypto ask": r"\bbitcoin|\beth(?:ereum)?|\bcrypto|\bUSDT\b|\bwallet (?:address|id)",
+    "urgent pressure": r"\burgent|\bimmediately|\bright now|\bwithin\s+\d+\s*(?:min|hour|day)s?",
+    "sob story hook": r"\bwidow|\borphan|\bdeployment|\bmilitary\b|\bcancer|\bhospital\b",
+    "alt payments": r"\bzelle\b|\bcash ?app\b|\bvenmo\b|\bwestern\s+union|\bmoney\s+gram",
+    "shipping/agent": r"\bshipping\s+agent|\bprivate\s+courier|\barrange\s+pickup",
+    "too good / advance": r"\badvance\s+payment|\bprepay\b|\boverpay\b|\bwiring\s+extra",
+    "outside platform": r"\boff\s+platform|\bmessage\s+me\s+direct|\btelegram\b|\bwhatsapp\b",
 }
 
-def analyze_logic(message: str) -> Dict:
-    msg = (message or "").lower()
-    signals: List[str] = []
+def score_text(text: str):
+    text_l = (text or "").lower()
+    hits = []
+    points = 0.0
+    for label, rx in PATTERNS.items():
+        if re.search(rx, text_l, re.I):
+            hits.append(label); points += 1.0
+    if len(text_l) > 400:
+        hits.append("long message boost"); points += 0.5
+    if re.search(r"https?://", text_l):
+        hits.append("link present"); points += 0.5
+    score = max(0.0, min(10.0, round(points, 2)))
+    return score, hits
 
-    score = 0.0
-    for kw, w in KEYWORDS.items():
-        if kw in msg:
-            signals.append(f"Keyword: {kw}")
-            score += w
-
-    # common scam patterns
-    patterns = [
-        (r"pay\s+me\s+with\s+gift\s+cards", 0.7, "Pattern: asks to pay with gift cards"),
-        (r"i'?m\s+stranded|mother'?s\s+sick|family\s+emergency", 0.4, "Pattern: urgent sob story"),
-        (r"send\s+bitcoin|btc", 0.5, "Pattern: asks for crypto"),
-        (r"can\s+you\s+cash\s+(a|my)\s+check", 0.4, "Pattern: check-cashing request"),
-    ]
-    for rx, w, label in patterns:
-        if re.search(rx, msg, flags=re.I):
-            signals.append(label)
-            score += w
-
-    score = max(0.0, min(1.0, round(score, 2)))
-
-    if score >= 0.7:
-        summary = "Scam likelihood: HIGH"
-    elif score >= 0.4:
-        summary = "Scam likelihood: MEDIUM"
-    else:
-        summary = "Scam likelihood: LOW"
-
+# ---------- Template global (reads env var, falls back to your test link) ----------
+@app.context_processor
+def inject_settings():
     return {
-        "ok": True,
-        "score": score,
-        "signals": signals[:20],
-        "summary": summary,
+        "STRIPE_LINK": os.environ.get(
+            "STRIPE_CHECKOUT_URL",
+            "https://buy.stripe.com/test_14AfZg50W6Fh64g5dL5wI01"  # fallback
+        )
     }
 
-# =============== Routes (pages) ====================
-@app.get("/")
+# ---------- Routes ----------
+@app.route("/", methods=["GET"])
 def home():
     return render_template("home.html")
 
-@app.get("/history")
-def history():
+@app.route("/result", methods=["POST"])
+def result():
+    text = request.form.get("message") or request.form.get("text")
+    if not text and request.is_json:
+        payload = request.get_json(silent=True) or {}
+        text = payload.get("message") or payload.get("text") or ""
+    score, reasons = score_text(text)
     db = get_db()
-    rows = db.execute(
-        "SELECT created_at, score, summary, message FROM scans ORDER BY created_at DESC LIMIT 100"
+    db.execute(
+        "INSERT INTO scans (text, score, reasons, created_at) VALUES (?, ?, ?, ?)",
+        (text, score, "; ".join(reasons), datetime.utcnow().isoformat(timespec="seconds")),
+    )
+    db.commit()
+    return render_template("result.html", original=text, text=text,
+                           score=score, reasons=reasons, details=reasons)
+
+@app.route("/history", methods=["GET"])
+def history():
+    rows = get_db().execute(
+        "SELECT id, text, score, reasons, created_at FROM scans ORDER BY id DESC LIMIT 200"
     ).fetchall()
     return render_template("history.html", rows=rows)
 
-@app.get("/pricing")
+@app.route("/pricing", methods=["GET"])
 def pricing():
     return render_template("pricing.html")
 
-# =============== API: analyze message ==============
-@app.route("/api/analyze", methods=["POST", "OPTIONS"])
-def api_analyze():
-    if request.method == "OPTIONS":
-        return ("", 204)
-    try:
-        data = request.get_json(silent=True) or {}
-        # accept both "message" and "text"
-        message = (data.get("message") or data.get("text") or "").strip()
-        if not message:
-            return jsonify({"ok": False, "error": "message is required"}), 400
+@app.route("/api/score", methods=["POST"])
+def api_score():
+    data = request.get_json(force=True)
+    text = data.get("text") or data.get("message") or ""
+    score, reasons = score_text(text)
+    return jsonify({"score": score, "reasons": reasons})
 
-        out = analyze_logic(message)
-
-        # Save to DB (always)
-        db = get_db()
-        db.execute(
-            "INSERT INTO scans (message, score, summary, created_at) VALUES (?, ?, ?, ?)",
-            (message, out["score"], out["summary"], datetime.now(timezone.utc).isoformat()),
-        )
-        db.commit()
-
-        return jsonify(out), 200
-    except Exception as e:
-        app.logger.exception("api_analyze failed")
-        return jsonify({"ok": False, "error": f"Server error: {e}"}), 500
-
-# (Optional) success page placeholder
-@app.get("/success")
-def success():
-    return render_template("result.html")
-
-# =============== Minimal social profile check (stub) ===============
-# Keeps your front-end JS happy; returns a low-risk placeholder.
-@app.post("/api/social_check")
-def social_check():
-    data = request.get_json(silent=True) or {}
-    url = (data.get("url") or "").strip()
-    if not url:
-        return jsonify({"ok": False, "error": "url is required"}), 400
-    # very light stubbed response
-    return jsonify({
-        "ok": True,
-        "platform": "unknown",
-        "status": "n/a",
-        "signals": [],
-        "summary": "Profile check is a preview feature.",
-        "score": 0.1
-    })
-
-# =============== Entrypoint (local) ===============
+# ---------- Main ----------
 if __name__ == "__main__":
+    # open an application context before touching g/get_db()
     with app.app_context():
         init_db()
     print("Starting ScamSniff on http://127.0.0.1:5000", flush=True)
