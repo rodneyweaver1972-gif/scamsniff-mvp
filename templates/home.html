@@ -2,227 +2,146 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>ScamSniff — Check a message</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>ScamSniff — Check a message</title>
   <style>
-    /* Keep styling inline so this file works even if /static/style.css changes */
-    :root { --bg:#0f122a; --card:#1b120e; --muted:#9aa6b2; --text:#e6edf3; }
+    :root { --bg:#0f1624; --card:#151d2e; --muted:#94a3b8; --text:#e6edf3; --brand:#3b82f6; --warn:#f59e0b; }
     * { box-sizing: border-box; }
-    body { margin:0; font-family:system-ui, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text) }
-    .wrap { max-width:900px; margin:40px auto; padding:0 16px; }
-    header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
-    header h1 { font-size:24px; margin:0; }
-    nav a { color:#9ec8ff; text-decoration:none; margin-right:16px; }
-    .card { background:var(--card); border:1px solid #1f2a44; border-radius:14px; padding:16px; }
-    textarea { width:100%; min-height:120px; padding:12px; border:1px solid #243253; border-radius:12px; background:#0f182a; color:#e6edf3; font-size:15px; }
-    input[type="url"] { width:100%; padding:10px; border:1px solid #ddd; border-radius:12px; background:#0f182a; color:#e6edf3; }
-    button { padding:10px 16px; border-radius:12px; border:0; cursor:pointer; font-weight:600; }
-    .primary { background:#2563eb; color:#fff; }
+    body { margin:0; font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); }
+    .wrap { max-width:1100px; margin:0 auto; padding:24px; }
+    header { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+    h1 { font-size:22px; margin:0; display:flex; gap:8px; align-items:center; }
+    nav { display:flex; gap:16px; align-items:center; }
+    nav a { color:#8cc7ff; text-decoration:none; }
+    .card { background:var(--card); border-radius:14px; padding:16px; }
+    .row { display:grid; gap:18px; }
+    @media (min-width: 920px){ .row { grid-template-columns: 1fr; } }
+    textarea { width:100%; min-height:180px; padding:12px; border:1px solid #243253; border-radius:12px; background:#0b1220; color:#e6edf3; }
+    input[type="url"] { width:100%; padding:12px; border:1px solid #243253; border-radius:12px; background:#0b1220; color:#e6edf3; }
+    button { border:0; border-radius:10px; padding:10px 14px; font-weight:600; cursor:pointer; }
+    .btn { background:#2563eb; color:#fff; }
+    .btn:disabled{ opacity:.6; cursor:not-allowed;}
+    .btn-outline { background:transparent; border:1px solid #2a3a5a; color:#cbe3ff; }
     .muted { color:var(--muted); font-size:13px; }
-    .row { display:flex; gap:16px; flex-wrap:wrap; }
-    .half { flex:1 1 420px; }
-    pre { white-space:pre-wrap; background:#0f182a; border:1px solid #243253; border-radius:10px; padding:12px; }
-    .badge { display:inline-block; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:700; }
-    .low { background:#1f7a1f; color:#e0ffe0; }
-    .med { background:#ad7a1a; color:#ffe6c7; }
-    .high { background:#7a1f1f; color:#ffe0e0; }
-    table { width:100%; border-collapse:collapse; font-size:14px; }
-    td, th { border-top:1px solid #26324e; padding:8px; text-align:left; vertical-align:top; }
-    .err { display:none; margin-top:12px; padding:10px; border-radius:12px; background:#3b0b0b; color:#ffcdcd; }
-    .ok { display:none; margin-top:12px; padding:10px; border-radius:12px; background:#0b3b1b; color:#d6ffea; }
+    pre { white-space:pre-wrap; background:#0f182a; border:1px solid #243253; border-radius:12px; padding:12px; font-weight:700; }
+    .price { font-size:18px; color:#fff; }
+    .upgrade-bar { display:flex; gap:10px; align-items:center; }
+    .ok,.err { display:none; margin-top:12px; padding:12px; border-radius:12px; }
+    .ok { background:#0b3b1b; color:#d6ffea; }
+    .err { background:#3b0b0b; color:#ffcdcd; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <img src="/static/logo.svg" alt="logo" width="28" height="28" />
-      <h1>ScamSniff</h1>
-      <nav style="margin-left:auto">
+      <h1>🛡️ ScamSniff</h1>
+      <nav>
         <a href="/">Home</a>
         <a href="/history">History</a>
         <a href="/pricing">Pricing</a>
-        <a href="https://buy.stripe.com/test_aFa4gydxs7JlcsE35D5wI200" class="btn btn-primary" target="_blank" rel="noopener">Upgrade</a>
+        <a class="btn" target="_blank" rel="noopener" href="https://buy.stripe.com/test_aFa4gydxs7JlcsE35D5wI00">Upgrade</a>
       </nav>
     </header>
 
-    <!-- Scan a message (existing feature) -->
-    <div class="card" style="margin-bottom:16px">
-      <h2 style="margin:0 0 10px 0;">Scan a message or listing</h2>
-      <p class="muted" style="margin:6px 0 12px 0;">Paste a text, ad, or listing. We’ll score it and show why.</p>
-      <div class="row">
-        <div class="half">
-          <textarea id="msg" placeholder="Paste message here…"></textarea>
-          <div style="display:flex;gap:8px;margin-top:10px;">
-            <button id="scanBtn" class="primary">Scan</button>
-            <button id="clearBtn">Clear</button>
-          </div>
-          <div id="scanErr" class="err"></div>
+    <div class="row">
+      <section class="card">
+        <h2>Analyze a message or listing</h2>
+        <p class="muted">Paste text from an email, marketplace chat, or SMS.</p>
+        <textarea id="msg" placeholder="Paste message here…"></textarea>
+        <div style="display:flex; gap:10px; margin-top:12px;">
+          <button id="scanBtn" class="btn">Scan</button>
+          <button id="clearBtn" class="btn-outline">Clear</button>
         </div>
-        <div class="half">
-          <div id="scoreWrap" style="display:none;margin-bottom:8px;">
-            <span class="muted">Score:</span>
-            <span id="badge" class="badge">—</span>
-          </div>
-          <pre id="summary" style="display:none;"></pre>
-          <table id="signalsTable" style="display:none;margin-top:8px;">
-            <thead><tr><th style="width:72px;">Type</th><th>Detail</th></tr></thead>
-            <tbody id="signalsBody"></tbody>
-          </table>
+        <div id="ok" class="ok"></div>
+        <div id="err" class="err"></div>
+        <div id="result" class="card" style="margin-top:12px;">
+          <div class="muted">Result will appear here.</div>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <!-- Profile Check (new feature) -->
-    <div class="card" style="margin-bottom:16px">
-      <h2 style="margin:0 0 10px 0;">Profile Check</h2>
-      <p class="muted" style="margin:6px 0 12px 0;">Paste a Facebook, X/Twitter, LinkedIn, Instagram, or TikTok profile URL.</p>
-      <input id="profUrl" type="url" placeholder="https://facebook.com/username" />
-      <div style="display:flex;gap:8px;margin-top:10px;">
-        <button id="profBtn" class="primary">Check profile</button>
-      </div>
-      <div id="profErr" class="err"></div>
-      <pre id="profOut" style="display:none;margin-top:8px;"></pre>
-    </div>
+      <section class="card">
+        <h2>Profile Check</h2>
+        <p class="muted">Paste a Facebook, X/Twitter, LinkedIn, Instagram, or TikTok profile URL.</p>
+        <input id="profileUrl" type="url" placeholder="https://facebook.com/username"/>
+        <div style="display:flex; gap:10px; margin-top:12px;">
+          <button id="profileBtn" class="btn">Check profile</button>
+        </div>
+        <div id="profileOut" class="card" style="margin-top:12px;">
+          <div class="muted">Result will appear here.</div>
+        </div>
+      </section>
 
-    <!-- Upgrade (Stripe Checkout) -->
-    <div class="card">
-      <h2 style="margin:0 0 10px 0;">Upgrade</h2>
-      <p class="muted" style="margin:6px 0 12px 0;">Unlock higher limits and pro features.</p>
-      <button id="upgradeBtn" class="primary">Upgrade</button>
-      <div id="upgradeOK" class="ok">Redirecting to checkout…</div>
-      <div id="upgradeErr" class="err"></div>
+      <section class="card">
+        <h2>Upgrade</h2>
+        <p class="muted">Unlock higher limits and pro features.</p>
+        <div class="upgrade-bar">
+          <span class="price">$5<span class="muted" style="font-size:16px;">/month</span></span>
+          <a class="btn" target="_blank" rel="noopener" href="https://buy.stripe.com/test_aFa4gydxs7JlcsE35D5wI00">Upgrade</a>
+        </div>
+      </section>
     </div>
   </div>
 
   <script>
-    // ---------- helpers ----------
-    function badgeFor(score){
-      if (score == null) return {text:'—', cls:''};
-      if (score >= 0.66) return {text:'HIGH', cls:'badge high'};
-      if (score >= 0.33) return {text:'MED', cls:'badge med'};
-      return {text:'LOW', cls:'badge low'};
-    }
-    function row(type, detail){
-      const tr = document.createElement('tr');
-      const td1 = document.createElement('td'); td1.textContent = type;
-      const td2 = document.createElement('td'); td2.textContent = detail;
-      tr.appendChild(td1); tr.appendChild(td2);
-      return tr;
-    }
+    const $ = (id) => document.getElementById(id);
 
-    // ---------- Scan a message ----------
-    const scanBtn = document.getElementById('scanBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const msg = document.getElementById('msg');
-    const scanErr = document.getElementById('scanErr');
-    const summary = document.getElementById('summary');
-    const signalsTable = document.getElementById('signalsTable');
-    const signalsBody = document.getElementById('signalsBody');
-    const scoreWrap = document.getElementById('scoreWrap');
-    const badgeEl = document.getElementById('badge');
+    $("clearBtn").onclick = () => {
+      $("msg").value = "";
+      $("result").innerHTML = '<div class="muted">Result will appear here.</div>';
+      $("ok").style.display = "none";
+      $("err").style.display = "none";
+    };
 
-    if (scanBtn){
-      scanBtn.addEventListener('click', async () => {
-        scanErr.style.display = 'none';
-        summary.style.display = 'none';
-        signalsTable.style.display = 'none';
-        scoreWrap.style.display = 'none';
-        signalsBody.innerHTML = '';
-        try{
-          const text = (msg.value||'').trim();
-          if (!text) throw new Error('Please paste a message first.');
-          const res = await fetch('/api/analyze', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ text })
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Scan failed.');
-          // Expecting: {score:0..1, summary:"", signals:[{type,detail}, ...]}
-          const b = badgeFor(data.score);
-          badgeEl.className = b.cls;
-          badgeEl.textContent = b.text;
-          scoreWrap.style.display = 'block';
+    $("scanBtn").onclick = async () => {
+      const text = $("msg").value.trim();
+      $("ok").style.display = "none";
+      $("err").style.display = "none";
+      if (!text) {
+        $("err").textContent = "Please paste a message first.";
+        $("err").style.display = "block";
+        return;
+      }
+      $("scanBtn").disabled = true;
+      try {
+        const r = await fetch("/api/analyze", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ message: text })
+        });
+        const out = await r.json();
+        if (!out.ok) throw new Error(out.error || "Error");
+        $("result").innerHTML = "<pre>"+JSON.stringify(out, null, 2)+"</pre>";
+        $("ok").textContent = "Done.";
+        $("ok").style.display = "block";
+      } catch (e) {
+        $("err").textContent = "Failed: " + e.message;
+        $("err").style.display = "block";
+      } finally {
+        $("scanBtn").disabled = false;
+      }
+    };
 
-          summary.textContent = data.summary || 'No summary';
-          summary.style.display = 'block';
-
-          (data.signals||[]).forEach(s => {
-            signalsBody.appendChild(row(s.type || 'signal', s.detail || String(s)));
-          });
-          if ((data.signals||[]).length) signalsTable.style.display = 'table';
-        }catch(e){
-          scanErr.textContent = e.message || 'Something went wrong.';
-          scanErr.style.display = 'block';
-        }
-      });
-    }
-    if (clearBtn){
-      clearBtn.addEventListener('click', () => {
-        msg.value = '';
-        scanErr.style.display = 'none';
-        summary.style.display = 'none';
-        signalsTable.style.display = 'none';
-        scoreWrap.style.display = 'none';
-        signalsBody.innerHTML = '';
-      });
-    }
-
-    // ---------- Profile Check ----------
-    (function(){
-      const btn = document.getElementById('profBtn');
-      const urlIn = document.getElementById('profUrl');
-      const err = document.getElementById('profErr');
-      const out = document.getElementById('profOut');
-      if (!btn) return;
-      btn.addEventListener('click', async () => {
-        err.style.display = 'none';
-        out.style.display = 'none';
-        try{
-          const url = (urlIn.value||'').trim();
-          if (!url) throw new Error('Please paste a profile URL.');
-          const res = await fetch('/api/social_check', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ url })
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Could not check profile.');
-          out.textContent = [
-            `Summary: ${data.summary}`,
-            `Signals:`,
-            ...(data.signals||[]).map(s => ` - ${s}`)
-          ].join('\n');
-          out.style.display = 'block';
-        }catch(e){
-          err.textContent = e.message || 'Something went wrong.';
-          err.style.display = 'block';
-        }
-      });
-    })();
-
-    // ---------- Stripe Upgrade ----------
-    (function(){
-      const btn = document.getElementById('upgradeBtn');
-      const ok = document.getElementById('upgradeOK');
-      const err = document.getElementById('upgradeErr');
-      if (!btn) return;
-      btn.addEventListener('click', async () => {
-        ok.style.display = 'none';
-        err.style.display = 'none';
-        try{
-          const res = await fetch('/create-checkout-session', { method:'POST' });
-          const data = await res.json();
-          if (!res.ok || !data.url) throw new Error(data.error || 'Could not start checkout.');
-          ok.style.display = 'block';
-          window.location = data.url;
-        }catch(e){
-          err.textContent = e.message || 'Something went wrong.';
-          err.style.display = 'block';
-        }
-      });
-    })();
+    $("profileBtn").onclick = async () => {
+      const url = $("profileUrl").value.trim();
+      if (!url) {
+        $("profileOut").innerHTML = '<div class="muted">Enter a profile URL.</div>';
+        return;
+      }
+      $("profileBtn").disabled = true;
+      try {
+        const r = await fetch("/api/social_check", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ url })
+        });
+        const out = await r.json();
+        $("profileOut").innerHTML = "<pre>"+JSON.stringify(out, null, 2)+"</pre>";
+      } catch (e) {
+        $("profileOut").innerHTML = '<div class="err">Failed: '+e.message+'</div>';
+      } finally {
+        $("profileBtn").disabled = false;
+      }
+    };
   </script>
 </body>
 </html>
