@@ -1,25 +1,19 @@
 from __future__ import annotations
 import os, sqlite3, re
 from datetime import datetime, timezone
-from typing import Dict, Any
+from typing import Dict
 from flask import (
-    Flask, request, jsonify, render_template,
-    send_from_directory, redirect, url_for, g
+    Flask,
+    render_template,
+    request,
+    jsonify,
+    g,
+    send_from_directory,
+    redirect,
+    url_for,
 )
 
-# ---------------- Stripe (optional; enabled via env vars) ----------------
-try:
-    import stripe  # pip install stripe
-except Exception:
-    stripe = None
-
-def _stripe_ready() -> bool:
-    return stripe is not None and bool(os.environ.get("STRIPE_SECRET_KEY"))
-
-if stripe is not None and os.environ.get("STRIPE_SECRET_KEY"):
-    stripe.api_key = os.environ.get("STRIPE_SECRET_KEY")
-
-# ---------------- Flask setup ----------------
+# ===================== Flask setup =====================
 app = Flask(__name__)
 app.config.update(
     DATABASE=os.environ.get(
@@ -28,7 +22,7 @@ app.config.update(
     )
 )
 
-# CORS so browser JS can call our API
+# Allow the page JS to call our API (simple CORS)
 @app.after_request
 def add_cors(resp):
     resp.headers["Access-Control-Allow-Origin"] = "*"
@@ -36,7 +30,8 @@ def add_cors(resp):
     resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     return resp
 
-# ---------------- DB helpers ----------------
+
+# ===================== DB helpers ======================
 def get_db():
     if "db" not in g:
         g.db = sqlite3.connect(app.config["DATABASE"])
@@ -51,22 +46,25 @@ def close_db(exc):
 
 def init_db():
     db = get_db()
-    db.executescript("""
-    CREATE TABLE IF NOT EXISTS scans(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        message    TEXT NOT NULL,
-        score      REAL NOT NULL,
-        summary    TEXT NOT NULL,
-        created_at TEXT NOT NULL
-    );
-    """)
+    db.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS scans(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            message    TEXT NOT NULL,
+            score      REAL NOT NULL,
+            summary    TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
+        """
+    )
     db.commit()
 
-# Ensure DB exists (local + Render)
+# Ensure DB exists even under Gunicorn/Render
 with app.app_context():
     init_db()
 
-# ---------------- Rules-based scoring ----------------
+
+# ============== Scam scoring rules (tunable) ===========
 PHRASES = {
     "payment_methods": [
         ("gift card", 0.60), ("gift cards", 0.60),
@@ -104,10 +102,10 @@ def _score_bucket(text: str, bucket: str):
             score += w
     return score, hits, any_hit
 
-def analyze_logic(message: str) -> Dict[str, Any]:
+def analyze_logic(message: str) -> Dict:
     text = (message or "").lower()
 
-    total = 0.10  # baseline
+    total = 0.10  # small baseline so nothing shows 0.00
     signals = []
 
     pm_score, pm_hits, pm_any = _score_bucket(text, "payment_methods")
@@ -118,64 +116,70 @@ def analyze_logic(message: str) -> Dict[str, Any]:
     total += pm_score + co_score + ss_score + ur_score
     signals.extend(pm_hits + co_hits + ss_hits + ur_hits)
 
-    # Combo bonuses (common scam patterns)
+    # ----- Combo bonuses (common scam patterns) -----
+    # Sob story + unusual payment method
     if pm_any and ss_any:
         signals.append({"name": "Pattern: sob story + unusual payment method", "score": 0.25})
         total += 0.25
 
+    # Check overpayment patterns (mentions check + action)
     if co_any and ("cash" in text or "deposit" in text or "send the rest" in text or "refund" in text):
         signals.append({"name": "Pattern: check overpayment", "score": 0.25})
         total += 0.25
 
+    # Gift card + urgency
     if pm_any and ur_any and ("gift card" in text or "gift cards" in text):
         signals.append({"name": "Pattern: urgent gift-card payment", "score": 0.20})
         total += 0.20
 
+    # Clamp and label
     total = max(0.0, min(total, 0.99))
     label = "HIGH" if total >= 0.75 else "MEDIUM" if total >= 0.45 else "LOW"
 
-    return {"ok": True, "summary": f"Scam likelihood: {label}", "score": round(total, 2), "signals": signals, "echo": message}
+    return {
+        "ok": True,
+        "summary": f"Scam likelihood: {label}",
+        "score": round(total, 2),
+        "signals": signals,
+        "echo": message,
+    }
 
-# ---------------- Pages ----------------
-def _render(name: str, **ctx: Any):
-    try:
-        return render_template(f"{name}.html", **ctx)
-    except Exception:
-        return f"{name.title()} page (template not found). API is at /api/analyze", 200
 
-@app.get("/")
+# ===================== Pages & routes ===================
+@app.route("/")
 def home():
-    return _render("home")
+    return render_template("home.html")
 
-@app.get("/history")
+@app.route("/history")
 def history():
     db = get_db()
     rows = db.execute(
-        "SELECT id, message, score, summary, created_at FROM scans ORDER BY id DESC LIMIT 100"
+        "SELECT id, message, score, summary, created_at AS created "
+        "FROM scans ORDER BY id DESC LIMIT 100"
     ).fetchall()
-    return _render("history", scans=rows)
+    return render_template("history.html", scans=rows)
 
-@app.get("/pricing")
-def pricing():
-    return _render("pricing")
-
-@app.get("/result")
+# Visiting /result directly? Send them home.
+@app.route("/result", methods=["GET"])
 def result_get():
     return redirect(url_for("home"))
 
-@app.get("/favicon.ico")
+# Optional favicon (avoids 404s if you don't have one)
+@app.route("/favicon.ico")
 def favicon():
     static_dir = os.path.join(app.root_path, "static")
-    icon = os.path.join(static_dir, "favicon.ico")
-    if os.path.exists(icon):
+    icon_path = os.path.join(static_dir, "favicon.ico")
+    if os.path.exists(icon_path):
         return send_from_directory(static_dir, "favicon.ico")
     return ("", 204)
 
-# ---------------- API & health ----------------
+
+# ===================== JSON API =========================
 @app.route("/api/analyze", methods=["POST", "OPTIONS"])
 def api_analyze():
     if request.method == "OPTIONS":
         return ("", 204)
+
     try:
         data = request.get_json(silent=True) or {}
         # ✅ Accept both "message" and "text"
@@ -185,11 +189,11 @@ def api_analyze():
 
         out = analyze_logic(message)
 
-        # Save to history
+        # Save to DB
         db = get_db()
         db.execute(
             "INSERT INTO scans (message, score, summary, created_at) VALUES (?, ?, ?, ?)",
-            (message, out["score"], out["summary"], datetime.now(timezone.utc).isoformat())
+            (message, out["score"], out["summary"], datetime.now(timezone.utc).isoformat()),
         )
         db.commit()
 
@@ -198,31 +202,7 @@ def api_analyze():
         app.logger.exception("api_analyze failed")
         return jsonify({"ok": False, "error": f"Server error: {e}"}), 500
 
-@app.get("/health")
-def health():
-    return jsonify({"ok": True}), 200
 
-# ---------------- Stripe Checkout ----------------
-@app.post("/create-checkout-session")
-def create_checkout_session():
-    if not _stripe_ready():
-        return jsonify({"ok": False, "error": "Stripe not configured"}), 400
-    price_id = os.environ.get("STRIPE_PRICE_ID")
-    if not price_id:
-        return jsonify({"ok": False, "error": "Missing STRIPE_PRICE_ID"}), 400
-    try:
-        domain = request.host_url.rstrip("/")
-        session = stripe.checkout.Session.create(
-            mode="subscription",            # use "payment" for one-time
-            line_items=[{"price": price_id, "quantity": 1}],
-            success_url=f"{domain}/success",
-            cancel_url=f"{domain}/pricing?canceled=1",
-            automatic_tax={"enabled": False},
-        )
-        return jsonify({"ok": True, "url": session.url})
-    except Exception as e:
-        app.logger.exception("stripe checkout failed")
-        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.get("/success")
 def success():
@@ -243,7 +223,7 @@ PLATFORMS = {
 def _detect_platform(url: str):
     for name, pat in PLATFORMS.items():
         if pat.search(url.strip()):
-            return name
+            return nameS
     return None
 
 def _fetch(url: str):
@@ -331,8 +311,12 @@ def social_check():
 # ---------- /Social Profile Check ----------
 
 # ---------------- Entrypoint (local) ----------------
+=======
+# ===================== Entrypoint (local run) ===========
+# -------- Entrypoint (local run) --------
 if __name__ == "__main__":
     with app.app_context():
         init_db()
     print("Starting ScamSniff on http://127.0.0.1:5000", flush=True)
     app.run(host="127.0.0.1", port=5000, debug=True)
+>

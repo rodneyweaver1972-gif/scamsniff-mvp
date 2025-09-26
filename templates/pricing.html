@@ -4,103 +4,53 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ScamSniff — Pricing</title>
-
-  <!-- favicon + styles (kept same paths you already use) -->
-  <link rel="icon" href="/static/logo.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/static/style.css" />
-
-  <!-- Tiny inline fallback so it still looks decent if style.css is empty -->
   <style>
-    :root { --bg:#0f1115; --card:#171a21; --text:#e8eaed; --muted:#9aa0a6; --brand:#6aa0ff; --brand-2:#87e8a8; }
-    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial}
-    .wrap{max-width:1100px;margin:0 auto;padding:24px}
-    .toolbar{display:flex;align-items:center;gap:16px}
-    .toolbar img{width:28px;height:28px}
-    .title{font-weight:700}
-    .spacer{flex:1}
-    .nav a{color:var(--muted);text-decoration:none;margin-left:12px}
-    .nav a[href="/pricing"]{color:var(--text);font-weight:600}
-    .hero{margin:28px 0 12px}
-    h1{margin:0 0 6px;font-size:28px}
-    .subtitle{color:var(--muted);margin:0 0 24px}
-    .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-    .plan{background:var(--card);border-radius:14px;padding:18px;border:1px solid #232734}
-    .plan.featured{border-color:var(--brand)}
-    .plan h2{margin:0 0 4px;font-size:20px}
-    .price{font-size:28px;font-weight:700;margin:4px 0 12px}
-    .features{list-style:none;padding:0;margin:0 0 16px;color:var(--muted)}
-    .features li{margin:6px 0}
-    .btn{display:inline-block;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:600;background:#2a2f3d;color:var(--text)}
-    .btn.primary{background:var(--brand);color:#0b1020}
-    footer{margin:28px 0 8px;color:var(--muted)}
-    footer a{color:var(--muted);text-decoration:none}
+    :root { --bg:#0f1624; --panel:#151d2e; --text:#e6edf3; --muted:#94a3b8; --brand:#3b82f6; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:var(--text); background:var(--bg); }
+    .wrap { max-width:900px; margin:0 auto; padding:24px; }
+    header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 24px; }
+    h1 { margin:0; font-size:22px; }
+    nav { display:flex; gap:16px; align-items:center; }
+    nav a { color:var(--text); text-decoration:none; opacity:.9; }
+    nav a:hover { opacity:1; text-decoration:underline; }
+    .btn { display:inline-block; padding:10px 16px; border-radius:10px; font-weight:700; text-decoration:none; }
+    .btn-primary { background:var(--brand); color:white; }
+    .btn-lg { padding:12px 20px; font-size:18px; }
+    .card { background:var(--panel); border-radius:16px; padding:22px; }
+    .center { text-align:center; }
+    .muted { color:var(--muted); font-size: 13px; }
+    .price { font-size:42px; font-weight:800; margin:6px 0 16px; }
   </style>
 </head>
-
 <body>
   <div class="wrap">
-    <!-- Top bar -->
-    <div class="toolbar">
-      <img src="/static/logo.svg" alt="ScamSniff logo" />
-      <span class="title">ScamSniff</span>
-      <div class="spacer"></div>
-      <nav class="nav">
+    <header>
+      <h1>🛡️ ScamSniff</h1>
+      <nav>
         <a href="/">Home</a>
+        <a href="/history">History</a>
         <a href="/pricing">Pricing</a>
+        <a href="https://buy.stripe.com/test_aFa4gydxs7JlcsE35D5wI200" class="btn btn-primary" target="_blank" rel="noopener">Upgrade</a>
       </nav>
-    </div>
+    </header>
 
-    <!-- Hero -->
-    <section class="hero">
-      <h1>Pricing & Plans</h1>
-      <p class="subtitle">Start free. Upgrade only if you need more power.</p>
+    <section class="card center" id="pricing">
+      <h2>ScamSniff Pro</h2>
+      <p class="muted">Better rules • Faster checks • Priority features</p>
+      <div class="price">$5<span class="muted" style="font-size:18px">/month</span></div>
+
+      <a href="https://buy.stripe.com/test_aFa4gydxs7JlcsE35D5wI200" class="btn btn-primary btn-lg" target="_blank" rel="noopener">
+        Upgrade to ScamSniff Pro — $5/mo
+      </a>
+      <p class="muted" style="margin-top:10px;">Secure checkout by Stripe. Cancel anytime.</p>
+
+      <ul style="text-align:left; margin:18px auto 0; max-width:520px; line-height:1.6;">
+        <li>⚡ Priority rule updates for new scam patterns</li>
+        <li>📈 Extended history & CSV export</li>
+        <li>🔒 Early access to browser extension features</li>
+      </ul>
     </section>
-
-    <!-- Plans -->
-    <section class="grid">
-      <!-- Free -->
-      <div class="plan">
-        <h2>Free</h2>
-        <div class="price">$0<span style="font-weight:400;font-size:14px;color:var(--muted)"> / mo</span></div>
-        <ul class="features">
-          <li>10 scans per day</li>
-          <li>Manual text/URL checks</li>
-          <li>Basic scam signals</li>
-          <li>Email support</li>
-        </ul>
-        <a class="btn" href="#">Start free</a>
-      </div>
-
-      <!-- Pro (featured) -->
-      <div class="plan featured">
-        <h2>Pro</h2>
-        <div class="price">$12<span style="font-weight:400;font-size:14px;color:var(--muted)"> / mo</span></div>
-        <ul class="features">
-          <li>Unlimited scans</li>
-          <li>Batch uploads (CSV)</li>
-          <li>Advanced signals + summaries</li>
-          <li>Priority support</li>
-        </ul>
-        <a class="btn primary" href="#">Go Pro</a>
-      </div>
-
-      <!-- Team -->
-      <div class="plan">
-        <h2>Team</h2>
-        <div class="price">$29<span style="font-weight:400;font-size:14px;color:var(--muted)"> / mo</span></div>
-        <ul class="features">
-          <li>Up to 10 users</li>
-          <li>Shared dashboards</li>
-          <li>Audit log & exports</li>
-          <li>SLA support</li>
-        </ul>
-        <a class="btn" href="#">Contact sales</a>
-      </div>
-    </section>
-
-    <footer>
-      <p><a href="/">← Back to Home</a></p>
-    </footer>
   </div>
 </body>
 </html>

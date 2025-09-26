@@ -1,38 +1,66 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ScamSniff — History</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin:0; padding:24px; }
+    :root { --bg:#0f1624; --panel:#151d2e; --text:#e6edf3; --muted:#94a3b8; --brand:#3b82f6; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:var(--text); background:var(--bg); }
+    .wrap { max-width:1100px; margin:0 auto; padding:24px; }
+    header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 24px; }
+    h1 { margin:0; font-size:22px; }
+    nav { display:flex; gap:16px; align-items:center; }
+    nav a { color:var(--text); text-decoration:none; opacity:.9; }
+    nav a:hover { opacity:1; text-decoration:underline; }
+    .btn { display:inline-block; padding:8px 14px; border-radius:8px; font-weight:600; text-decoration:none; }
+    .btn-primary { background:var(--brand); color:white; }
+    .card { background:var(--panel); border-radius:14px; padding:18px; }
     table { width:100%; border-collapse: collapse; }
-    th, td { text-align:left; padding:8px; border-bottom:1px solid #eee; }
-    a { color:#0366d6; text-decoration:none; }
-    .wrap { max-width:960px; margin:0 auto; }
+    th, td { text-align:left; padding:10px 8px; border-bottom:1px solid #243044; vertical-align:top; }
+    .muted { color:var(--muted); font-size: 13px; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <p><a href="/">← Home</a></p>
-    <h1>Recent scans</h1>
-    <table>
-      <thead>
-        <tr><th>When</th><th>Score</th><th>Summary</th><th>Snippet</th></tr>
-      </thead>
-      <tbody>
-        {% for s in scans %}
+    <header>
+      <h1>🛡️ ScamSniff</h1>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/history">History</a>
+        <a href="/pricing">Pricing</a>
+        <a href="https://buy.stripe.com/test_aFa4gydxs7JlcsE35D5wI200" class="btn btn-primary" target="_blank" rel="noopener">Upgrade</a>
+      </nav>
+    </header>
+
+    <div class="card">
+      <h2>Recent scans</h2>
+      {% if scans and scans|length > 0 %}
+      <table>
+        <thead>
           <tr>
-            <td>{{ s["created"] or s["created_at"] }}</td>
-            <td>{{ "%.2f"|format(s["score"]) }}</td>
-            <td>{{ s["summary"] }}</td>
-            <td>{{ (s["message"][:80] ~ ("…" if s["message"]|length > 80 else "")) }}</td>
+            <th style="width:28%">When</th>
+            <th style="width:12%">Score</th>
+            <th style="width:22%">Summary</th>
+            <th>Snippet</th>
           </tr>
-        {% else %}
-          <tr><td colspan="4">No scans yet.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {% for s in scans %}
+          <tr>
+            <td class="muted">{{ s['created'] }}</td>
+            <td>{{ '%.2f'|format(s['score']) }}</td>
+            <td>{{ s['summary'] }}</td>
+            <td>{{ (s['message'] or '')[:120] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <p class="muted">No scans yet. Go to <a href="/">Home</a> and analyze a message.</p>
+      {% endif %}
+    </div>
   </div>
 </body>
 </html>
